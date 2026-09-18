@@ -3,7 +3,7 @@
 ## Stack
 - Frontend: React (Vite)
 - Backend: FastAPI (Python)
-- Database: a relational database (TBD — e.g. PostgreSQL or SQLite)
+- Database: SQLite via SQLAlchemy + Alembic (swappable for Postgres later)
 
 ## Directory layout
 - `backend/` — FastAPI project
@@ -14,9 +14,10 @@
   - `src/App.jsx` — root component
 
 ## Specs
-- [Frontend spec](specs/frontend-spec.md) — not yet written
-- [Backend spec](specs/backend-spec.md) — not yet written
-- [API contract](specs/api-contract.md) — not yet written
+- [Goal spec](specs/goal-spec.md)
+- [Frontend spec](specs/frontend-spec.md)
+- [Backend spec](specs/backend-spec.md)
+- [API contract](specs/api-contract.md)
 
 ## Running locally
 Backend:
@@ -31,3 +32,9 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## Testing
+Backend: `cd backend && ./venv/bin/python -m pytest`
+Frontend: `cd frontend && npm test`
+
+CI (`.github/workflows/ci.yml`) runs both on every push and pull request.
