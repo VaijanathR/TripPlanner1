@@ -1,0 +1,129 @@
+# Frontend Spec
+
+Derived from [goal-spec.md](goal-spec.md). No implementation code — this defines
+screens, flow, and behavior only.
+
+## Screens
+
+### 1. Trip List
+All of a user's trips. Shows every trip the user has created, each as a
+card with trip name, date range, and day count. Actions: open a trip,
+create a new trip, delete a trip.
+
+### 2. Itinerary Editor
+One trip: its days, and each day's activities. Day-by-day plan with CRUD
+on individual days (add a day, edit a day's activities/notes, delete a
+day, reorder days). Each activity within a day has at least a title,
+start time, and end time. Each day shows a maps/weather panel for its
+location. Includes an explicit "Save" action and a "Get share link"
+action.
+
+### 3. Share View
+Read-only, no login required. View of an itinerary opened via its share
+link. Renders the same day-by-day plan (days and their activities) and
+maps/weather panels as the Editor, but with no edit controls.
+
+## User Flow
+
+1. User opens the app → **Trip List**.
+2. User creates a new trip → **Itinerary Editor**.
+3. User adds a day to the trip.
+4. User adds activities to that day (title, start time, end time, notes).
+5. User saves the day/trip.
+6. User clicks "Get share link" → link is generated/copied.
+7. User (or a recipient with the link, no login required) opens the link
+   → **Share View**, read-only.
+8. From Trip List, user can also open an existing trip to keep editing,
+   or delete a trip, removing it and invalidating its share link.
+
+## Acceptance Criteria
+
+### Trip List
+
+- Given the trip list is being fetched, the UI shows a loading skeleton
+  in place of the trip cards.
+- Given the fetch succeeds and the user has no trips, the UI shows an
+  empty state with a "Create your first trip" call to action.
+- Given the fetch succeeds and the user has one or more trips, the UI
+  shows a card per trip with name, date range, and day count.
+- Given the fetch fails or times out, the UI shows an error state with
+  the reason (where available) and a "Retry" action, not a blank screen.
+- Given the user deletes a trip and the delete succeeds, the UI removes
+  that card immediately and shows a brief confirmation.
+- Given the user deletes a trip and the delete fails, the UI keeps the
+  card, shows an inline error on that card, and leaves the rest of the
+  list interactive.
+- Given the user creates a new trip successfully, the UI navigates to
+  the Itinerary Editor for that trip.
+
+### Itinerary Editor
+
+- Given the itinerary is being fetched, the UI shows a loading state for
+  the day list (skeleton), not an empty editor.
+- Given the fetch succeeds and the trip has zero days, the UI shows an
+  empty state with an "Add a day" call to action.
+- Given the fetch succeeds and the trip has one or more days, the UI
+  shows each day in order with its activities/notes and a maps/weather
+  panel.
+- Given the fetch fails or times out, the UI shows an error state with a
+  "Retry" action; existing unsaved local edits (if any) are not
+  discarded.
+- Given the user adds a day and the create succeeds, the new day appears
+  in the list in the correct order.
+- Given the user adds a day and the create fails, the UI shows an
+  inline error on the new-day form and keeps the user's entered data.
+- Given the user edits a day's fields, the UI shows a "saving" indicator
+  while the update is in flight.
+- Given a day's update succeeds, the UI shows a brief "saved"
+  confirmation and reflects the update immediately.
+- Given a day's update fails, the UI shows an inline error, retains the
+  user's edited (unsaved) values, and offers a "Retry" action.
+- Given the user deletes a day, the UI asks for confirmation before
+  removing it.
+- Given a day delete succeeds, the UI removes that day and renumbers the
+  remaining days.
+- Given a day delete fails, the UI keeps the day visible and shows an
+  inline error.
+- Given a day's maps/weather data is loading, the UI shows a loading
+  indicator scoped to that day's panel only (the rest of the day's
+  content stays interactive).
+- Given a day's maps/weather call times out or fails, the day still
+  renders with its saved activities in full, and an "unavailable" badge
+  appears in place of the map — never a blank panel and never a crashed
+  screen.
+- Given the user edits an activity's end time to a value before its
+  start time, the Save button is disabled and an inline message
+  explains why, before any request reaches the server.
+- Given an activity's end time is on or after its start time, the Save
+  button is enabled (assuming no other validation errors) and saving
+  proceeds normally.
+- Given the user requests a share link and it succeeds, the UI shows the
+  link and a "copy" action with a confirmation on copy.
+- Given the user requests a share link and it fails, the UI shows an
+  inline error and offers a "Retry" action.
+
+### Share View
+
+- Given the shared itinerary is being fetched, the UI shows a loading
+  state, not a blank page.
+- Given the link is invalid, expired, or the underlying trip was
+  deleted, the UI shows a clear "this itinerary is unavailable" state
+  (not a generic crash or blank page).
+- Given the fetch succeeds and the itinerary has zero days, the UI shows
+  an empty state ("No days have been added to this trip yet").
+- Given the fetch succeeds and the itinerary has one or more days, the
+  UI renders each day's activities/notes and maps/weather panel,
+  read-only (no edit, add, or delete controls anywhere on the page).
+- Given the fetch fails for a reason other than an invalid link (e.g.
+  network/server error), the UI shows an error state with a "Retry"
+  action.
+- Given a day's maps/weather call fails or times out, the UI shows the
+  same "unavailable" badge in place of the map as the Editor — the
+  day's activities still render in full, never a crash.
+
+## Out of scope for this spec
+- Visual design, styling, and component library choices.
+- Exact request/response shapes — covered in `specs/api-contract.md`
+  (not yet written).
+- Authentication/authorization model for the Trip List and Editor
+  screens.
