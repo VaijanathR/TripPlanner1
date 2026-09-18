@@ -125,3 +125,19 @@ class TripDetail(BaseModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     days: list[DayOut]
+
+
+class ShareTokenResponse(BaseModel):
+    share_token: str
+
+
+class SharedTripDetail(BaseModel):
+    """Same as TripDetail but never re-exposes the share_token itself."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    days: list[DayOut]

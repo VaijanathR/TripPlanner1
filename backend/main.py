@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from errors import register_error_handlers
-from routers import conditions, days, trips
+from routers import conditions, days, sharing, trips
 
 app = FastAPI(title="Trip Planner API")
 
@@ -18,6 +18,8 @@ register_error_handlers(app)
 app.include_router(trips.router)
 app.include_router(days.router)
 app.include_router(conditions.router)
+app.include_router(sharing.trip_share_router)
+app.include_router(sharing.public_share_router)
 
 
 @app.get("/health")
