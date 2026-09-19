@@ -5,18 +5,23 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
+from auth import current_user
 from database import get_db
 from deps import get_trip_or_404
 from errors import not_found
 from routers.conditions import build_conditions_response
 
-trip_share_router = APIRouter(prefix="/api/trips/{trip_id}/share", tags=["sharing"])
+trip_share_router = APIRouter(
+    prefix="/api/trips/{trip_id}/share", tags=["sharing"], dependencies=[Depends(current_user)]
+)
 public_share_router = APIRouter(prefix="/api/share/{share_token}", tags=["sharing"])
 
 
 @trip_share_router.post("", response_model=schemas.ShareTokenResponse)
-def create_share_link(trip_id: int, db: Session = Depends(get_db)):
-    trip = get_trip_or_404(db, trip_id)
+def create_share_link(
+    trip_id: int, db: Session = Depends(get_db), user: models.User = Depends(current_user)
+):
+    trip = get_trip_or_404(db, trip_id, user)
     if trip.share_token is None:
         trip.share_token = str(uuid.uuid4())
         db.commit()

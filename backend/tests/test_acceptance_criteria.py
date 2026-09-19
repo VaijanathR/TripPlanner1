@@ -128,25 +128,43 @@ def test_conditions_endpoint_returns_200_unavailable_when_upstream_times_out(
 # endpoint succeeds; the same request against a write endpoint on the same
 # trip is rejected.
 #
-# There is no authentication model anywhere in this app yet (an explicit,
-# documented gap in api-contract.md/backend-spec.md), so the TestClient
-# already makes every request here "unauthenticated" -- no login step
-# exists to perform. What this criterion actually constrains is the
-# share-token-scoped route surface itself: it must expose read access and
-# nothing else. "The same request against a write endpoint on the same
-# trip" is exercised as a mutating verb against that same share-token URL,
-# which has no route registered for anything but GET.
+# Two halves, both with a client that carries NO credentials (anon_client):
+#   1. the share-token URL serves a read and offers no way to write;
+#   2. the trip's own write endpoint -- the "write endpoint on the same trip"
+#      -- rejects that same unauthenticated caller with 401 and changes
+#      nothing. (Added when accounts were introduced; before that the app had
+#      no authentication and this half could only be argued, not tested.)
+# The full sweep of every route lives in test_access_control.py.
 # ---------------------------------------------------------------------------
 
 
-def test_share_link_read_succeeds_and_write_is_rejected(client, trip):
+def test_share_link_read_succeeds_and_write_is_rejected(client, anon_client):
+    trip = client.post("/api/trips", json={"name": "Kyoto in Autumn"}).json()
     client.post(
         f"/api/trips/{trip['id']}/days", json={"date": "2026-11-03", "location": "Kyoto, Japan"}
     )
     token = client.post(f"/api/trips/{trip['id']}/share").json()["share_token"]
 
-    read_resp = client.get(f"/api/share/{token}")
+    read_resp = anon_client.get(f"/api/share/{token}")
     assert read_resp.status_code == 200
 
-    write_resp = client.put(f"/api/share/{token}", json={"name": "Hijacked"})
+    write_resp = anon_client.put(f"/api/share/{token}", json={"name": "Hijacked"})
     assert write_resp.status_code in (404, 405)
+
+
+def test_the_same_trips_own_write_endpoint_rejects_an_unauthenticated_caller(client, anon_client):
+    trip = client.post("/api/trips", json={"name": "Kyoto in Autumn"}).json()
+    day = client.post(
+        f"/api/trips/{trip['id']}/days", json={"date": "2026-11-03", "location": "Kyoto, Japan"}
+    ).json()
+    token = client.post(f"/api/trips/{trip['id']}/share").json()["share_token"]
+    assert anon_client.get(f"/api/share/{token}").status_code == 200  # the read half still works
+
+    resp = anon_client.put(
+        f"/api/trips/{trip['id']}/days/{day['id']}",
+        json={"date": "2026-11-04", "location": "Hijacked", "activities": []},
+    )
+
+    assert resp.status_code == 401
+    still = client.get(f"/api/trips/{trip['id']}").json()["days"][0]
+    assert (still["location"], still["date"]) == ("Kyoto, Japan", "2026-11-03")

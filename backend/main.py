@@ -3,8 +3,13 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import auth
 from errors import register_error_handlers
+from routers import auth as auth_routes
 from routers import conditions, days, sharing, trips
+
+# Fail at startup, not on the first login, if the signing secret is missing.
+auth.get_jwt_secret()
 
 app = FastAPI(title="Trip Planner API")
 
@@ -20,6 +25,7 @@ app.add_middleware(
 
 register_error_handlers(app)
 
+app.include_router(auth_routes.router)
 app.include_router(trips.router)
 app.include_router(days.router)
 app.include_router(conditions.router)

@@ -3,16 +3,24 @@ from sqlalchemy.orm import Session
 
 import models
 import schemas
+from auth import current_user
 from database import get_db
 from deps import get_day_or_404, get_trip_or_404
 from errors import validation_error
 
-router = APIRouter(prefix="/api/trips/{trip_id}/days", tags=["days"])
+router = APIRouter(
+    prefix="/api/trips/{trip_id}/days", tags=["days"], dependencies=[Depends(current_user)]
+)
 
 
 @router.post("", response_model=schemas.DayOut, status_code=201)
-def create_day(trip_id: int, payload: schemas.DayCreate, db: Session = Depends(get_db)):
-    get_trip_or_404(db, trip_id)
+def create_day(
+    trip_id: int,
+    payload: schemas.DayCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),
+):
+    get_trip_or_404(db, trip_id, user)
     next_order = db.query(models.Day).filter(models.Day.trip_id == trip_id).count()
     day = models.Day(
         trip_id=trip_id,
@@ -41,8 +49,13 @@ def _validate_activities(activities: list[schemas.ActivityIn]) -> None:
 # Registered before "/{day_id}" so "reorder" is matched as a literal path
 # segment, not swallowed by the int-typed day_id parameter.
 @router.put("/reorder", response_model=schemas.DaysReorderResponse)
-def reorder_days(trip_id: int, payload: schemas.DaysReorderRequest, db: Session = Depends(get_db)):
-    get_trip_or_404(db, trip_id)
+def reorder_days(
+    trip_id: int,
+    payload: schemas.DaysReorderRequest,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),
+):
+    get_trip_or_404(db, trip_id, user)
     days = db.query(models.Day).filter(models.Day.trip_id == trip_id).all()
     existing_ids = {day.id for day in days}
     incoming_ids = payload.day_ids
@@ -78,9 +91,13 @@ def reorder_days(trip_id: int, payload: schemas.DaysReorderRequest, db: Session 
 
 @router.put("/{day_id}", response_model=schemas.DayOut)
 def update_day(
-    trip_id: int, day_id: int, payload: schemas.DayUpdate, db: Session = Depends(get_db)
+    trip_id: int,
+    day_id: int,
+    payload: schemas.DayUpdate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),
 ):
-    get_trip_or_404(db, trip_id)
+    get_trip_or_404(db, trip_id, user)
     day = get_day_or_404(db, trip_id, day_id)
 
     _validate_activities(payload.activities)
@@ -122,8 +139,13 @@ def update_day(
 
 
 @router.delete("/{day_id}", status_code=204)
-def delete_day(trip_id: int, day_id: int, db: Session = Depends(get_db)):
-    get_trip_or_404(db, trip_id)
+def delete_day(
+    trip_id: int,
+    day_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(current_user),
+):
+    get_trip_or_404(db, trip_id, user)
     day = get_day_or_404(db, trip_id, day_id)
     db.delete(day)
     db.commit()

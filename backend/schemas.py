@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import datetime
 
+import re
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -141,3 +143,63 @@ class SharedTripDetail(BaseModel):
     created_at: datetime.datetime
     updated_at: datetime.datetime
     days: list[DayOut]
+
+
+# -- auth --------------------------------------------------------------------
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MIN_PASSWORD_LENGTH = 8
+MAX_PASSWORD_LENGTH = 128
+
+
+def _clean_email(v: str) -> str:
+    v = v.strip().lower()
+    if len(v) > 254 or not _EMAIL_RE.match(v):
+        raise ValueError("must be a valid email address")
+    return v
+
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def email_must_be_valid(cls, v: str) -> str:
+        return _clean_email(v)
+
+    @field_validator("password")
+    @classmethod
+    def password_must_be_long_enough(cls, v: str) -> str:
+        if not MIN_PASSWORD_LENGTH <= len(v) <= MAX_PASSWORD_LENGTH:
+            raise ValueError(
+                f"must be between {MIN_PASSWORD_LENGTH} and {MAX_PASSWORD_LENGTH} characters"
+            )
+        return v
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str = Field(max_length=MAX_PASSWORD_LENGTH)
+
+    @field_validator("email")
+    @classmethod
+    def normalise_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str = Field(min_length=1)
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
