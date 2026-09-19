@@ -187,11 +187,17 @@ frontend-spec.md), never an exception that surfaces as a `5xx`.
   ```json
   { "status": "ok",
     "data": { "temperature_c": 18, "condition": "Partly cloudy",
-              "map_url": "https://.../static-map.png" },
+              "map_url": "https://www.openstreetmap.org/?mlat=35.02&mlon=135.75#map=11/35.02/135.75",
+              "map_embed_url": "https://www.openstreetmap.org/export/embed.html?bbox=...&layer=mapnik&marker=35.02%2C135.75" },
     "checked_at": "2026-09-18T01:30:00Z" }
   ```
   Only the fields the frontend needs are returned — the raw upstream
   payload and any credentials are never forwarded (backend-spec.md).
+  Data comes from Open-Meteo (no API key): the day's `location` is
+  geocoded, then the *current* temperature and weather are fetched.
+  `map_url` is a link that opens the place on OpenStreetMap;
+  `map_embed_url` is an iframe-embeddable OpenStreetMap view. Both are
+  empty strings if unavailable, and the frontend omits the map then.
 - **200, upstream failed or timed out** (network error, non-2xx from
   the provider, or the call exceeded its bounded timeout):
   ```json

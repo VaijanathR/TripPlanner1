@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import weather
 from database import Base, get_db
 from main import app
 
@@ -43,3 +44,9 @@ def client(db_session_factory):
 def trip(client):
     resp = client.post("/api/trips", json={"name": "Kyoto in Autumn"})
     return resp.json()
+
+
+@pytest.fixture(autouse=True)
+def offline_conditions_provider(monkeypatch):
+    """Endpoint tests must never call the real Open-Meteo API."""
+    monkeypatch.setattr(weather, "_default_provider", lambda: weather.StubConditionsProvider())

@@ -13,7 +13,7 @@ def test_conditions_ok_shape(client, trip):
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
-    assert set(body["data"].keys()) == {"temperature_c", "condition", "map_url"}
+    assert set(body["data"].keys()) == {"temperature_c", "condition", "map_url", "map_embed_url"}
     assert "checked_at" in body
 
 

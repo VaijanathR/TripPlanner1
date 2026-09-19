@@ -41,13 +41,25 @@ export default function ConditionsPanel({ load, location }) {
     );
   }
 
-  const { temperature_c, condition, map_url } = state.data;
+  const { temperature_c, condition, map_url, map_embed_url } = state.data;
   return (
     <div className="conditions-panel">
       <p className="conditions-summary">
         {temperature_c}°C, {condition}
       </p>
-      {map_url && <img className="conditions-map" src={map_url} alt={`Map of ${location}`} />}
+      {map_embed_url && (
+        <iframe
+          className="conditions-map"
+          title={`Map of ${location}`}
+          src={map_embed_url}
+          loading="lazy"
+        />
+      )}
+      {map_url && (
+        <a href={map_url} target="_blank" rel="noopener noreferrer">
+          View larger map
+        </a>
+      )}
     </div>
   );
 }
