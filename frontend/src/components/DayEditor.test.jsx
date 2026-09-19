@@ -1,8 +1,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DayEditor from "./DayEditor";
+import { conditionsApi } from "../api/conditions";
 import { daysApi } from "../api/days";
 
+vi.mock("../api/conditions", () => ({
+  conditionsApi: { forDay: vi.fn() },
+}));
 vi.mock("../api/days", () => ({
   daysApi: { update: vi.fn(), remove: vi.fn() },
 }));
@@ -34,6 +38,11 @@ function renderDayEditor(overrides = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  conditionsApi.forDay.mockResolvedValue({
+    status: "ok",
+    data: { temperature_c: 18, condition: "Clear", map_url: "" },
+    checked_at: "2026-09-18T01:30:00Z",
+  });
 });
 
 describe("DayEditor", () => {
@@ -93,5 +102,22 @@ describe("DayEditor", () => {
     expect(window.confirm).toHaveBeenCalled();
     expect(daysApi.remove).not.toHaveBeenCalled();
     expect(props.onDeleted).not.toHaveBeenCalled();
+  });
+
+  it("still renders the saved activities in full, with an unavailable badge, when conditions fail", async () => {
+    conditionsApi.forDay.mockRejectedValue(new Error("upstream timeout"));
+    renderDayEditor();
+
+    expect(await screen.findByText("Conditions unavailable")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Fushimi Inari hike")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
+
+  it("keeps the rest of the day interactive while conditions are loading", () => {
+    conditionsApi.forDay.mockReturnValue(new Promise(() => {}));
+    renderDayEditor();
+
+    expect(screen.getByText(/loading conditions/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });
 });

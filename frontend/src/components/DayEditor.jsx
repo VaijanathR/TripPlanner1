@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { conditionsApi } from "../api/conditions";
 import { daysApi } from "../api/days";
+import ConditionsPanel from "./ConditionsPanel";
 
 let localIdCounter = 0;
 function nextLocalId() {
@@ -119,6 +121,13 @@ export default function DayEditor({ tripId, day, index, dayCount, onSaved, onDel
         Notes
         <textarea value={notes} onChange={(e) => { setNotes(e.target.value); setJustSaved(false); }} />
       </label>
+
+      {/* Keyed by the saved location so a saved location change reloads it. */}
+      <ConditionsPanel
+        key={day.location}
+        location={day.location}
+        load={() => conditionsApi.forDay(tripId, day.id)}
+      />
 
       <h4>Activities</h4>
       {activities.length === 0 && <p className="empty-state">No activities yet.</p>}

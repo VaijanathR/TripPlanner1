@@ -174,3 +174,20 @@ button.delete-button {
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
+
+.conditions-panel {
+  margin: 12px 0;
+}
+
+.conditions-map {
+  max-width: 100%;
+  border-radius: 6px;
+}
+
+.unavailable-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85em;
+}
