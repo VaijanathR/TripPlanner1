@@ -50,3 +50,9 @@ CI (`.github/workflows/ci.yml`) runs both on every push and pull request.
 
 ## Maps/weather
 Conditions come from Open-Meteo (geocoding + current weather) — **no API key**. The map is an OpenStreetMap embed plus link, built in `backend/weather.py`; the frontend never calls an upstream API. Endpoint tests use the offline stub (`tests/conftest.py`), never the network.
+
+## Accounts
+Email + password and Google sign-in. Every `/api` route needs a login token (`Authorization: Bearer`) except register/login/google and the two public `/api/share/*` reads; a user only reaches their own trips (someone else's looks like a missing one). `backend/auth.py` holds the hashing, tokens and Google verification; `backend/tests/test_access_control.py` fails if any new route is left open, so a new public route must be added to its allowlist deliberately.
+- Backend env: `JWT_SECRET` (required, >= 32 chars — the app refuses to start without it; a rotation logs everyone out) and `GOOGLE_CLIENT_ID` (optional; Google sign-in returns 503 without it). Both are Azure app settings; tests set a throwaway `JWT_SECRET` in `tests/conftest.py`.
+- Frontend env: `VITE_GOOGLE_CLIENT_ID` (public; from the GitHub repo variable of the same name in CI). Unset = the Google button is hidden.
+- Not built: password reset, email verification, token revocation, login rate limiting.
