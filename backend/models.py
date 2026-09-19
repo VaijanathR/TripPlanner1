@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, Time, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -126,3 +126,21 @@ class DestinationGuide(Base):
     status: Mapped[str] = mapped_column(String, nullable=False, default="building")
     payload: Mapped[str | None] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AuthAttempt(Base):
+    """One recorded sign-in attempt, for rate limiting (see ratelimit.py). Holds
+    only SHA-256 hashes of the email and the caller address, never the raw values."""
+
+    __tablename__ = "auth_attempts"
+    __table_args__ = (
+        Index("ix_auth_attempts_kind_address_created", "kind", "address_hash", "created_at"),
+        Index("ix_auth_attempts_kind_email_address", "kind", "email_hash", "address_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)  # login_failure | signup | google
+    email_hash: Mapped[str | None] = mapped_column(String, nullable=True)
+    address_hash: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+

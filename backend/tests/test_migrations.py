@@ -77,6 +77,51 @@ def test_a_second_guide_row_for_the_same_place_is_refused(db_path):
             conn.execute("INSERT INTO destination_guides (geoname_id, status) VALUES (5, 'ready')")
 
 
+def test_running_migrations_in_process_does_not_silence_the_applications_loggers(db_path):
+    import logging
+
+    app_logger = logging.getLogger("trip_planner.ratelimit")
+    app_logger.disabled = False
+
+    command.upgrade(_config(db_path), "head")
+
+    assert app_logger.disabled is False
+
+
+def test_the_rate_limiting_table_has_its_columns_and_indexes(db_path):
+    command.upgrade(_config(db_path), "head")
+
+    columns = {row[1]: row for row in _rows(db_path, "PRAGMA table_info(auth_attempts)")}
+    assert set(columns) == {"id", "kind", "email_hash", "address_hash", "created_at"}
+    assert [columns[c][3] for c in ("kind", "address_hash", "created_at")] == [1, 1, 1]  # NOT NULL
+    assert columns["email_hash"][3] == 0  # sign-up and Google attempts have no email
+    indexes = {row[1] for row in _rows(db_path, "PRAGMA index_list(auth_attempts)")}
+    assert {"ix_auth_attempts_kind_address_created", "ix_auth_attempts_kind_email_address"} <= indexes
+
+
+def test_existing_data_survives_the_rate_limiting_migration(db_path):
+    cfg = _config(db_path)
+    command.upgrade(cfg, "d52b8e3f1a20")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO users (email) VALUES ('a@example.com')")
+        conn.execute("INSERT INTO trips (user_id, name) VALUES (1, 'Kept')")
+
+    command.upgrade(cfg, "head")
+
+    assert _rows(db_path, "SELECT name FROM trips") == [("Kept",)]
+    assert _rows(db_path, "SELECT COUNT(*) FROM auth_attempts") == [(0,)]
+
+
+def test_the_rate_limiting_migration_downgrades_cleanly(db_path):
+    cfg = _config(db_path)
+    command.upgrade(cfg, "head")
+
+    command.downgrade(cfg, "d52b8e3f1a20")
+
+    tables = {r[0] for r in _rows(db_path, "SELECT name FROM sqlite_master WHERE type='table'")}
+    assert "auth_attempts" not in tables and "trips" in tables
+
+
 def test_the_migration_can_be_downgraded_and_upgraded_again(db_path):
     cfg = _config(db_path)
     command.upgrade(cfg, "head")

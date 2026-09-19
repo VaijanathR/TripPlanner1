@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 import auth
 import models
+import ratelimit
 import schemas
 from database import get_db
 from errors import AppError
@@ -21,7 +22,12 @@ def _auth_response(user: models.User) -> schemas.AuthResponse:
     )
 
 
-@router.post("/register", response_model=schemas.AuthResponse, status_code=201)
+@router.post(
+    "/register",
+    response_model=schemas.AuthResponse,
+    status_code=201,
+    dependencies=[Depends(ratelimit.limit_signup)],
+)
 def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == payload.email).first():
         raise AppError(409, "email_taken", "An account with this email already exists")
@@ -37,15 +43,18 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=schemas.AuthResponse)
-def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
+def login(payload: schemas.LoginRequest, request: Request, db: Session = Depends(get_db)):
+    # Counted (and refused if locked) BEFORE the password is checked; see ratelimit.py.
+    reservation = ratelimit.reserve_login_attempt(db, request, payload.email)
     user = db.query(models.User).filter(models.User.email == payload.email).first()
     # verify_password does the same work whether or not the user exists.
     if not auth.verify_password(payload.password, user.password_hash if user else None):
         raise _BAD_LOGIN
+    ratelimit.release_login_success(db, reservation)
     return _auth_response(user)
 
 
-@router.post("/google", response_model=schemas.AuthResponse)
+@router.post("/google", response_model=schemas.AuthResponse, dependencies=[Depends(ratelimit.limit_google)])
 def google_login(payload: schemas.GoogleLoginRequest, db: Session = Depends(get_db)):
     if auth.google_client_id() is None:
         raise AppError(503, "google_unavailable", "Google sign-in is not configured")

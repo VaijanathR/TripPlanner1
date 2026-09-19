@@ -4,11 +4,19 @@ from fastapi.responses import JSONResponse
 
 
 class AppError(Exception):
-    def __init__(self, status_code: int, code: str, message: str, fields: dict | None = None):
+    def __init__(
+        self,
+        status_code: int,
+        code: str,
+        message: str,
+        fields: dict | None = None,
+        headers: dict[str, str] | None = None,
+    ):
         self.status_code = status_code
         self.code = code
         self.message = message
         self.fields = fields
+        self.headers = headers
 
     def body(self) -> dict:
         payload = {"code": self.code, "message": self.message}
@@ -28,7 +36,7 @@ def validation_error(message: str, fields: dict | None = None) -> AppError:
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError):
-        return JSONResponse(status_code=exc.status_code, content=exc.body())
+        return JSONResponse(status_code=exc.status_code, content=exc.body(), headers=exc.headers)
 
     @app.exception_handler(RequestValidationError)
     async def handle_request_validation_error(request: Request, exc: RequestValidationError):

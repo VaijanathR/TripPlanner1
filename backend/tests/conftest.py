@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import guide
+import ratelimit
 import upstream
 import weather
 from database import Base, get_db
@@ -98,3 +99,10 @@ def offline_upstreams(monkeypatch):
     monkeypatch.setattr(upstream, "get_json", no_network)
     monkeypatch.setattr(guide, "RUN_INLINE", True)
     guide._inflight.clear()
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limiter_state(monkeypatch):
+    """The limiter's counters live in the (per-test) database; only its purge
+    timer is process-wide, so reset that."""
+    monkeypatch.setattr(ratelimit, "_last_purge", None)

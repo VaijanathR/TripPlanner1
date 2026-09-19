@@ -101,6 +101,44 @@ describe("Login: logging in", () => {
   });
 });
 
+describe("Login: too many attempts", () => {
+  const tooMany = () => new ApiError(429, "too_many_attempts", "Too many attempts. Try again in 12 minutes.");
+
+  it("shows the server's 'try again in N minutes' message and keeps the entered email", async () => {
+    auth.login.mockRejectedValue(tooMany());
+    renderLogin();
+
+    fill("alice@example.com", "wrong-password");
+    submitForm();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Too many attempts. Try again in 12 minutes.");
+    expect(screen.getByLabelText("Email")).toHaveValue("alice@example.com");
+    expect(screen.queryByText("HOME PAGE")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Log in" })).toBeEnabled();
+  });
+
+  it("shows the same message when sign-up is refused", async () => {
+    auth.register.mockRejectedValue(tooMany());
+    renderLogin();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Create account" }));
+    fill("new@example.com", "long-enough-password");
+    submitForm();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Try again in 12 minutes.");
+    expect(screen.getByLabelText("Email")).toHaveValue("new@example.com");
+  });
+
+  it("shows the same message when Google sign-in is refused", async () => {
+    auth.loginWithGoogle.mockRejectedValue(tooMany());
+    renderLogin();
+
+    fireEvent.click(screen.getByText("google-stub"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Try again in 12 minutes.");
+  });
+});
+
 describe("Login: creating an account", () => {
   const openRegister = () => fireEvent.click(screen.getByRole("tab", { name: "Create account" }));
 
