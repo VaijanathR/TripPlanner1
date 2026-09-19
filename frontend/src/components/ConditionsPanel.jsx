@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Shows one day's maps/weather conditions. `load` returns a promise for the
 // conditions response. Any failure -- an "unavailable" response, a network
@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 // of the day always renders. Remount with a new `key` to reload.
 export default function ConditionsPanel({ load, location }) {
   const [state, setState] = useState({ status: "loading" });
+  // Loads once per mount; the ref keeps an inline `load` from re-triggering it.
+  const loadRef = useRef(load);
 
   useEffect(() => {
     let cancelled = false;
-    load()
+    loadRef.current()
       .then((result) => {
         if (!cancelled) setState(result?.status === "ok" && result.data ? result : { status: "unavailable" });
       })

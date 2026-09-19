@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 import TripList from './pages/TripList'
+import ShareView from './pages/ShareView'
 import ItineraryEditor from './pages/ItineraryEditor'
 
 function App() {
@@ -8,6 +9,7 @@ function App() {
     <Routes>
       <Route path="/" element={<TripList />} />
       <Route path="/trips/:tripId" element={<ItineraryEditor />} />
+      <Route path="/share/:token" element={<ShareView />} />
     </Routes>
   )
 }
