@@ -1,4 +1,7 @@
-const API_BASE = "http://127.0.0.1:8000/api";
+// Backend origin, injected at build time (set VITE_API_URL in Vercel).
+// Falls back to the local dev server.
+const API_ORIGIN = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+const API_BASE = `${API_ORIGIN}/api`;
 
 export class ApiError extends Error {
   constructor(status, code, message, fields) {
