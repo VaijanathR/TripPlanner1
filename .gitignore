@@ -1,1 +1,4 @@
 .claude/
+.vercel
+.env*
+!.env.example

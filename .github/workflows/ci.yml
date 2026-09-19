@@ -50,12 +50,18 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Supplied here, not pulled from Vercel: the copy stored in the Vercel
+      # project is a "sensitive" variable, which `vercel pull` replaces with
+      # the literal text "[SENSITIVE]" -- that would get baked into the
+      # bundle as the API URL. A shell variable overrides the pulled file.
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: npm install --global vercel@59
+      - run: test -n "$VITE_API_URL" || { echo "::error::repo variable VITE_API_URL is not set"; exit 1; }
       # Run from the repo root: the project's Root Directory setting
       # (frontend) is applied by the CLI. Build-time env vars such as
       # VITE_API_URL are pulled from the Vercel project.
