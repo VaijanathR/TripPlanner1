@@ -14,9 +14,10 @@ vi.mock("../api/days", () => ({
 // Stand-in for DayEditor that exposes what the page passes it: the day's
 // position, and the callbacks the page owns (delete, move).
 vi.mock("../components/DayEditor", () => ({
-  default: ({ day, index, onDeleted, onMove }) => (
+  default: ({ day, index, onSaved, onDeleted, onMove }) => (
     <div data-testid="day-editor">
       <span>{`Day ${index + 1}: ${day.location}`}</span>
+      <button onClick={() => onSaved({ ...day, location: `${day.location} (edited)` })}>{`save-${day.id}`}</button>
       <button onClick={() => onDeleted(day.id)}>{`delete-${day.id}`}</button>
       <button onClick={() => onMove(index, 1)}>{`down-${day.id}`}</button>
     </div>
@@ -223,5 +224,16 @@ describe("ItineraryEditor", () => {
     expect(await screen.findByText(/Couldn't reorder days: reorder failed/)).toBeInTheDocument();
     expect(screen.getByText("Day 1: Kyoto, Japan")).toBeInTheDocument();
     expect(screen.getByText("Day 2: Osaka, Japan")).toBeInTheDocument();
+  });
+
+  it("reflects a saved day's new values in the page's copy of the trip, leaving other days alone", async () => {
+    tripsApi.get.mockResolvedValue(twoDayTrip);
+    renderEditor();
+    await screen.findAllByTestId("day-editor");
+
+    fireEvent.click(screen.getByRole("button", { name: "save-11" }));
+
+    expect(await screen.findByText("Day 2: Osaka, Japan (edited)")).toBeInTheDocument();
+    expect(screen.getByText("Day 1: Kyoto, Japan")).toBeInTheDocument();
   });
 });

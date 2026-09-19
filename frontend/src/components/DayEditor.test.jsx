@@ -64,6 +64,17 @@ describe("DayEditor", () => {
     expect(daysApi.update).not.toHaveBeenCalled();
   });
 
+  it("keeps Save enabled when the end time is exactly the start time", () => {
+    renderDayEditor();
+
+    const timeInputs = document.querySelectorAll('input[type="time"]');
+    fireEvent.change(timeInputs[0], { target: { value: "09:00" } });
+    fireEvent.change(timeInputs[1], { target: { value: "09:00" } });
+
+    expect(screen.queryByText("End time must not be before start time.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
+
   it("re-enables Save once the time is corrected, and Save calls the API", async () => {
     renderDayEditor();
 
@@ -102,6 +113,15 @@ describe("DayEditor", () => {
     expect(window.confirm).toHaveBeenCalled();
     expect(daysApi.remove).not.toHaveBeenCalled();
     expect(props.onDeleted).not.toHaveBeenCalled();
+  });
+
+  it("shows the day's maps/weather panel with that day's conditions", async () => {
+    renderDayEditor();
+
+    expect(await screen.findByText(/18°C, Clear/)).toBeInTheDocument();
+    expect(conditionsApi.forDay).toHaveBeenCalledWith("1", 10);
+    // The panel sits alongside the activities, not instead of them.
+    expect(screen.getByDisplayValue("Fushimi Inari hike")).toBeInTheDocument();
   });
 
   it("still renders the saved activities in full, with an unavailable badge, when conditions fail", async () => {
