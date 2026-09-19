@@ -44,7 +44,7 @@ CI (`.github/workflows/ci.yml`) runs both on every push and pull request.
 - Both deploys run from `.github/workflows/ci.yml`, only on a push to `main`, and only after **both** `backend-tests` and `frontend-tests` pass.
 - Backend: Azure App Service (`VaijTripPlanner`, F1 free tier), deployed by the `deploy-backend` job.
 - Frontend: Vercel (root directory `frontend`), deployed by the `deploy-frontend` job via the Vercel CLI. Vercel's own Git auto-deploy is turned off in `frontend/vercel.json`. Needs GitHub secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Production URL: https://trip-planner1-nu.vercel.app
-- Frontend -> backend: build-time env var `VITE_API_URL` (backend origin, no `/api`; set in Vercel, see `frontend/.env.example`). Changing it needs a Vercel redeploy. Defaults to `http://127.0.0.1:8000` locally.
+- Frontend -> backend: build-time env var `VITE_API_URL` (backend origin, no `/api`; see `frontend/.env.example`). In CI it comes from the **GitHub repo variable** `VITE_API_URL`, not from Vercel: the copy stored in the Vercel project is a sensitive variable, and `vercel pull` turns those into the literal text `[SENSITIVE]`. Changing it needs a new deploy (push to `main`). Defaults to `http://127.0.0.1:8000` locally.
 - Backend -> frontend: `CORS_ORIGINS` app setting on Azure (comma-separated origins, added to the localhost defaults in `backend/main.py`). Only the production Vercel domain is allowed; preview URLs are blocked.
 - `frontend/vercel.json` rewrites all paths to `index.html` so `BrowserRouter` deep links (e.g. share links) work.
 
