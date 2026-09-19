@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { tripsApi } from "../api/trips";
 import { daysApi } from "../api/days";
 import DayEditor from "../components/DayEditor";
+import { HeroScene } from "../components/Illustrations";
 import ShareLink from "../components/ShareLink";
 
 export default function ItineraryEditor() {
@@ -106,11 +107,17 @@ export default function ItineraryEditor() {
   }
 
   return (
-    <div className="page">
-      <Link to="/">← Trip List</Link>
-      <h1>{trip.name}</h1>
-      <ShareLink tripId={tripId} />
+    <>
+      <header className="trip-hero">
+        <HeroScene className="hero-art" />
+        <div className="hero-inner">
+          <Link className="back-link" to="/">← Trip List</Link>
+          <h1>{trip.name}</h1>
+          <ShareLink tripId={tripId} />
+        </div>
+      </header>
 
+    <div className="page">
       {reorderError && <p className="inline-error">Couldn't reorder days: {reorderError}</p>}
 
       {trip.days.length === 0 && (
@@ -168,5 +175,6 @@ export default function ItineraryEditor() {
         {addDayError && <p className="inline-error">{addDayError}</p>}
       </form>
     </div>
+    </>
   );
 }

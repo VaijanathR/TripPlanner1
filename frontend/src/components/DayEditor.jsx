@@ -105,18 +105,20 @@ export default function DayEditor({ tripId, day, index, dayCount, onSaved, onDel
         </div>
       </div>
 
-      <label>
-        Date
-        <input type="date" value={date} onChange={(e) => { setDate(e.target.value); setJustSaved(false); }} />
-      </label>
-      <label>
-        Location
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => { setLocation(e.target.value); setJustSaved(false); }}
-        />
-      </label>
+      <div className="day-fields">
+        <label>
+          Date
+          <input type="date" value={date} onChange={(e) => { setDate(e.target.value); setJustSaved(false); }} />
+        </label>
+        <label>
+          Location
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => { setLocation(e.target.value); setJustSaved(false); }}
+          />
+        </label>
+      </div>
       <label>
         Notes
         <textarea value={notes} onChange={(e) => { setNotes(e.target.value); setJustSaved(false); }} />

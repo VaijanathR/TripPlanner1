@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { tripsApi } from "../api/trips";
+import { CalendarIcon, PinIcon, TrashIcon } from "../components/Icons";
+import { EmptyTrips, HeroScene } from "../components/Illustrations";
+import { coverGradient } from "../utils/cover";
 
 // How long the "trip deleted" confirmation stays visible.
 export const NOTICE_MS = 3000;
@@ -65,8 +68,15 @@ export default function TripList() {
   }
 
   return (
-    <div className="page">
-      <h1>Trip Planner</h1>
+    <>
+    <header className="hero">
+      <HeroScene className="hero-art" />
+      <div className="hero-inner">
+        <p className="eyebrow">Trip Planner</p>
+        <h1>Where to next?</h1>
+        <p className="hero-sub">
+          Plan every day, discover what is worth seeing, and share your itinerary with a link.
+        </p>
 
       <form className="create-trip-form" onSubmit={handleCreate}>
         <input
@@ -82,6 +92,10 @@ export default function TripList() {
         </button>
         {createError && <p className="inline-error">{createError}</p>}
       </form>
+      </div>
+    </header>
+
+    <div className="page">
 
       {notice && (
         <p className="notice" role="status">
@@ -106,6 +120,7 @@ export default function TripList() {
 
       {trips !== null && !error && trips.length === 0 && (
         <div className="empty-state">
+          <EmptyTrips className="empty-illustration" />
           <p>No trips yet.</p>
           <button type="button" onClick={() => nameInputRef.current?.focus()}>
             Create your first trip
@@ -118,20 +133,29 @@ export default function TripList() {
           {trips.map((trip) => (
             <li key={trip.id} className="trip-card">
               <Link to={`/trips/${trip.id}`}>
-                <strong>{trip.name}</strong>
-                <span>
-                  {trip.day_count === 0
-                    ? "No days yet"
-                    : `${trip.start_date} – ${trip.end_date} · ${trip.day_count} day${trip.day_count === 1 ? "" : "s"}`}
-                </span>
+                <div className="trip-cover" style={{ backgroundImage: coverGradient(trip.name) }}>
+                  <PinIcon />
+                </div>
+                <div className="trip-card-body">
+                  <strong>{trip.name}</strong>
+                  <span>
+                    <CalendarIcon width={15} height={15} />
+                    {trip.day_count === 0
+                      ? "No days yet"
+                      : `${trip.start_date} – ${trip.end_date} · ${trip.day_count} day${trip.day_count === 1 ? "" : "s"}`}
+                  </span>
+                </div>
               </Link>
-              <button
-                className="delete-button"
-                onClick={() => handleDelete(trip.id)}
-                disabled={deletingId === trip.id}
-              >
-                {deletingId === trip.id ? "Deleting…" : "Delete"}
-              </button>
+              <div className="trip-card-actions">
+                <button
+                  className="delete-button"
+                  onClick={() => handleDelete(trip.id)}
+                  disabled={deletingId === trip.id}
+                >
+                  <TrashIcon width={15} height={15} />
+                  {deletingId === trip.id ? "Deleting…" : "Delete"}
+                </button>
+              </div>
               {deleteErrors[trip.id] && (
                 <p className="inline-error">{deleteErrors[trip.id]}</p>
               )}
@@ -140,5 +164,6 @@ export default function TripList() {
         </ul>
       )}
     </div>
+    </>
   );
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { sharingApi } from "../api/sharing";
+import Brand from "../components/Brand";
 import ConditionsPanel from "../components/ConditionsPanel";
+import { HeroScene } from "../components/Illustrations";
 
 // HH:MM:SS from the API -> HH:MM for display.
 const shortTime = (t) => (t ?? "").slice(0, 5);
@@ -77,8 +79,18 @@ export default function ShareView() {
 
   const { trip } = result;
   return (
-    <div className="page share-view">
-      <h1>{trip.name}</h1>
+    <div className="share-view">
+      <div className="share-header">
+        <Brand />
+      </div>
+      <header className="trip-hero">
+        <HeroScene className="hero-art" />
+        <div className="hero-inner">
+          <p className="eyebrow">Shared itinerary</p>
+          <h1>{trip.name}</h1>
+        </div>
+      </header>
+      <div className="page">
 
       {trip.days.length === 0 && (
         <div className="empty-state">
@@ -117,6 +129,7 @@ export default function ShareView() {
             )}
           </section>
         ))}
+      </div>
       </div>
     </div>
   );

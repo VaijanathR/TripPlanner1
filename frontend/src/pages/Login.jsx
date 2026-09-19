@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import Brand from "../components/Brand";
 import GoogleSignInButton from "../components/GoogleSignInButton";
+import { HeroScene } from "../components/Illustrations";
 import { useAuth } from "../auth/useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -55,8 +57,16 @@ export default function Login() {
   }
 
   return (
-    <div className="page auth-page">
-      <h1>Trip Planner</h1>
+    <div className="auth-page">
+      <aside className="auth-hero">
+        <HeroScene className="hero-art" />
+        <Brand />
+        <h2>Plan the trip. Share the adventure.</h2>
+        <p>Build a day-by-day itinerary, see what the weather is doing, and send friends a link.</p>
+      </aside>
+      <main className="auth-card">
+      <h1>Welcome</h1>
+      <p className="auth-sub">Log in or create an account to plan your trips.</p>
       <div className="auth-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={!isRegister} onClick={() => switchMode("login")}>
           Log in
@@ -103,6 +113,7 @@ export default function Login() {
       </form>
 
       <GoogleSignInButton onCredential={(credential) => attempt(() => loginWithGoogle(credential))} />
+      </main>
     </div>
   );
 }
