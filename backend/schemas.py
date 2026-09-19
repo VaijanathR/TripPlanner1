@@ -104,12 +104,28 @@ class TripCreate(BaseModel):
         return v
 
 
+class DestinationOut(BaseModel):
+    geoname_id: int
+    city: str | None
+    state: str | None
+    country: str | None
+    country_code: str | None
+    latitude: float | None
+    longitude: float | None
+
+
+class DestinationSet(BaseModel):
+    geoname_id: int = Field(gt=0)
+
+
 class TripSummary(BaseModel):
     id: int
     name: str
     start_date: datetime.date | None
     end_date: datetime.date | None
     day_count: int
+    destination: DestinationOut | None = None
+    cover_image_url: str | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
@@ -124,6 +140,7 @@ class TripDetail(BaseModel):
     id: int
     name: str
     share_token: str | None
+    destination: DestinationOut | None = None
     created_at: datetime.datetime
     updated_at: datetime.datetime
     days: list[DayOut]
@@ -142,6 +159,7 @@ class SharedTripDetail(BaseModel):
     name: str
     created_at: datetime.datetime
     updated_at: datetime.datetime
+    destination: DestinationOut | None = None
     days: list[DayOut]
 
 
@@ -203,3 +221,81 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+# -- destination guide ----------------------------------------------------------
+
+
+class PlaceCandidate(BaseModel):
+    geoname_id: int
+    city: str
+    state: str | None
+    country: str
+    country_code: str
+    latitude: float
+    longitude: float
+    population: int | None = None
+
+
+class PlaceCandidates(BaseModel):
+    candidates: list[PlaceCandidate]
+
+
+class GuidePhoto(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    extract: str | None = None
+    image_url: str | None = None
+    credit_url: str | None = None
+    page_url: str | None = None
+
+
+class GuidePhotos(BaseModel):
+    city: GuidePhoto | None = None
+    state: GuidePhoto | None = None
+    country: GuidePhoto | None = None
+
+
+class GalleryImage(BaseModel):
+    title: str
+    image_url: str
+    credit_url: str | None = None
+
+
+class GuidePlace(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    type: str | None = None
+    theme: str
+    sitelinks: int
+    distance_km: float | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    image_url: str | None = None
+    credit_url: str | None = None
+    wikidata_url: str | None = None
+
+
+class GuidePlaces(BaseModel):
+    city: list[GuidePlace] = []
+    around: list[GuidePlace] = []
+
+
+class GuideActivity(BaseModel):
+    theme: str
+    label: str
+    summary: str
+    places: list[str]
+
+
+class GuideOut(BaseModel):
+    # "no_destination" | "building" | "ready" | "failed"
+    status: str
+    destination: DestinationOut | None = None
+    photos: GuidePhotos = GuidePhotos()
+    gallery: list[GalleryImage] = []
+    places: GuidePlaces = GuidePlaces()
+    activities: list[GuideActivity] = []
+    # per source: "pending" | "ready" | "unavailable"
+    sections: dict[str, str] = {}

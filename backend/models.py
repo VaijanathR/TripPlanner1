@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, Time, func
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, Time, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
@@ -32,12 +32,34 @@ class Trip(Base):
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
     share_token: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    # Where the trip is going. All null until the user picks a destination.
+    geoname_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    city: Mapped[str | None] = mapped_column(String, nullable=True)
+    state: Mapped[str | None] = mapped_column(String, nullable=True)
+    country: Mapped[str | None] = mapped_column(String, nullable=True)
+    country_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    @property
+    def destination(self) -> dict | None:
+        if self.geoname_id is None:
+            return None
+        return {
+            "geoname_id": self.geoname_id,
+            "city": self.city,
+            "state": self.state,
+            "country": self.country,
+            "country_code": self.country_code,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+        }
 
     owner: Mapped["User"] = relationship(back_populates="trips")
     days: Mapped[list["Day"]] = relationship(
@@ -91,3 +113,16 @@ class Activity(Base):
     )
 
     day: Mapped["Day"] = relationship(back_populates="activities")
+
+
+class DestinationGuide(Base):
+    """Cached guide (photos, popular places, things to do) for one place,
+    shared by every trip going there. See guide.py."""
+
+    __tablename__ = "destination_guides"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    geoname_id: Mapped[int] = mapped_column(Integer, unique=True, index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="building")
+    payload: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+import guide
+import upstream
 import weather
 from database import Base, get_db
 from main import app
@@ -82,3 +84,17 @@ def trip(client):
 def offline_conditions_provider(monkeypatch):
     """Endpoint tests must never call the real Open-Meteo API."""
     monkeypatch.setattr(weather, "_default_provider", lambda: weather.StubConditionsProvider())
+
+
+@pytest.fixture(autouse=True)
+def offline_upstreams(monkeypatch):
+    """No test may reach Wikipedia, Wikidata or the geocoder. Anything that isn't
+    given an explicit fake fails like a network outage; the guide "background"
+    build runs in the calling thread so tests can see its result."""
+
+    def no_network(url, params=None, timeout=8.0):
+        raise upstream.UpstreamError(f"network disabled in tests: {url}")
+
+    monkeypatch.setattr(upstream, "get_json", no_network)
+    monkeypatch.setattr(guide, "RUN_INLINE", True)
+    guide._inflight.clear()

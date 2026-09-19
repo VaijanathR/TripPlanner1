@@ -48,6 +48,35 @@ def test_existing_trips_are_kept_and_given_to_a_login_less_legacy_owner(db_path)
     assert owners == [("Old trip A", LEGACY_EMAIL, None, None), ("Old trip B", LEGACY_EMAIL, None, None)]
 
 
+def test_trips_get_destination_columns_and_a_guide_cache_table(db_path):
+    command.upgrade(_config(db_path), "head")
+
+    trip_columns = {row[1] for row in _rows(db_path, "PRAGMA table_info(trips)")}
+    assert {"geoname_id", "city", "state", "country", "country_code", "latitude", "longitude"} <= trip_columns
+    guide_columns = {row[1] for row in _rows(db_path, "PRAGMA table_info(destination_guides)")}
+    assert {"geoname_id", "status", "payload", "updated_at"} <= guide_columns
+
+
+def test_existing_trips_survive_the_destination_migration_with_no_destination(db_path):
+    cfg = _config(db_path)
+    command.upgrade(cfg, "c41a7d2e9f10")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO users (email) VALUES ('a@example.com')")
+        conn.execute("INSERT INTO trips (user_id, name) VALUES (1, 'Old trip')")
+
+    command.upgrade(cfg, "head")
+
+    assert _rows(db_path, "SELECT name, geoname_id, city FROM trips") == [("Old trip", None, None)]
+
+
+def test_a_second_guide_row_for_the_same_place_is_refused(db_path):
+    command.upgrade(_config(db_path), "head")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO destination_guides (geoname_id, status) VALUES (5, 'ready')")
+        with pytest.raises(sqlite3.IntegrityError):
+            conn.execute("INSERT INTO destination_guides (geoname_id, status) VALUES (5, 'ready')")
+
+
 def test_the_migration_can_be_downgraded_and_upgraded_again(db_path):
     cfg = _config(db_path)
     command.upgrade(cfg, "head")
