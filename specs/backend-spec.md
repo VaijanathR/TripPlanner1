@@ -146,6 +146,31 @@ at least 32 characters, signs login tokens) and `GOOGLE_CLIENT_ID`
 - Trips that existed before accounts were introduced are kept, owned by a
   placeholder account that nobody can sign in to.
 
+## Rate limiting
+
+The public sign-in endpoints (`/api/auth/login`, `/api/auth/register`,
+`/api/auth/google`) are rate limited; the rules and the `429` response are in
+`specs/api-contract.md` ("Rate limits"). Attempts are recorded in the database
+(a table for attempt counters), so limits survive a restart. Only hashed keys are
+stored — a SHA-256 of the email and of the caller address — never raw emails or
+addresses.
+
+### Acceptance criteria
+- Each of the four limits (R1 to R4) is enforced, and each is independent of the
+  others.
+- A lock ends once the window has passed (sliding window).
+- During a lock, the correct password is refused.
+- An unknown email and a registered email are treated identically.
+- One caller's failures do not lock a different caller address out of the same
+  email (R1 is per email *and* address).
+- Counters survive a restart of the application.
+- Raw emails and raw caller addresses are never stored.
+- Old attempt records are purged automatically.
+- Supplying a forged earlier `X-Forwarded-For` entry does not let a caller evade
+  a limit.
+- If the attempts table cannot be read or written, the request proceeds (the
+  limit is briefly not enforced) and the problem is logged.
+
 ## Destinations and guides
 
 Sources are free and need no API key, and are called only from

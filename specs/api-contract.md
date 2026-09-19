@@ -49,6 +49,7 @@ not a cookie, because the frontend and API are on different domains.
 - **201** → `{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "a@b.co" } }`
 - **409** `email_taken` — an account with this email exists.
 - **422** `validation_error` — invalid email or password length.
+- **429** `too_many_attempts` — see [Rate limits](#rate-limits).
 
 ### `POST /api/auth/login`
 - **Request**: `{ "email": "...", "password": "..." }`
@@ -56,6 +57,7 @@ not a cookie, because the frontend and API are on different domains.
 - **401** `invalid_credentials`, message "Incorrect email or password" —
   identical for an unknown email, a wrong password, and an account that has
   no password (Google-only), so the response never reveals which.
+- **429** `too_many_attempts` — see [Rate limits](#rate-limits).
 
 ### `POST /api/auth/google`
 Sign in with Google. The frontend obtains a Google **ID token** from Google
@@ -67,6 +69,7 @@ Identity Services and sends it here; the backend verifies it.
   Google, or the email is already tied to a *different* Google identity.
 - **503** `google_unavailable` — Google sign-in isn't configured
   (`GOOGLE_CLIENT_ID` unset) or Google's signing keys couldn't be fetched.
+- **429** `too_many_attempts` — see [Rate limits](#rate-limits).
 - **Linking**: if an account with the same email already exists and was made
   with a password, the Google identity is linked to it (its trips are kept)
   **and its password is removed**. A password registration never proved the
@@ -254,6 +257,32 @@ frontend-spec.md), never an exception that surfaces as a `5xx`.
   ```json
   { "error": { "code": "not_found", "message": "Day not found" } }
   ```
+
+### Rate limits
+
+The public sign-in endpoints refuse a caller who makes too many attempts:
+
+`429 { "error": { "code": "too_many_attempts", "message": "Too many attempts. Try again in 12 minutes." } }`
+
+with a `Retry-After` header (seconds).
+
+| Rule | Counts | Limit |
+|---|---|---|
+| R1 | failed password logins, per email address **and** caller address | 3 in the last 15 minutes |
+| R2 | failed password logins, per caller address (any emails) | 30 in the last 15 minutes |
+| R3 | sign-up attempts, per caller address | 10 in the last hour |
+| R4 | Google sign-in attempts, per caller address | 20 in the last 15 minutes |
+
+- Each window is sliding: a lock ends when the oldest counted attempt is older
+  than the window.
+- While a login is locked, even the correct password is refused.
+- Unknown emails are counted exactly like registered ones, so the limit never
+  reveals which emails exist.
+- A successful login clears that email-and-address count (R1).
+- A password lock never blocks Google sign-in.
+- The caller's address is the last entry of `X-Forwarded-For` (the one the
+  hosting platform adds, because earlier entries can be forged by the caller);
+  without that header, the connection's own address.
 
 ## Destinations
 

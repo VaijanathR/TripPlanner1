@@ -65,6 +65,8 @@ maps/weather panels as the Editor, but with no edit controls.
   reached while checking it, the UI shows a "Retry", not the Login screen.
 - Given someone opens a Share View link, no login is required and no
   session check is made.
+- Given the server refuses because of too many attempts, the Login screen shows
+  its "try again in N minutes" message and leaves the entered email in place.
 
 ### Trip List
 
