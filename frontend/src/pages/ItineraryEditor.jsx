@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { tripsApi } from "../api/trips";
 import { daysApi } from "../api/days";
@@ -17,6 +17,7 @@ export default function ItineraryEditor() {
   const [addDayError, setAddDayError] = useState(null);
 
   const [reorderError, setReorderError] = useState(null);
+  const newDateRef = useRef(null);
 
   function load() {
     setError(null);
@@ -115,6 +116,9 @@ export default function ItineraryEditor() {
       {trip.days.length === 0 && (
         <div className="empty-state">
           <p>No days added yet.</p>
+          <button type="button" onClick={() => newDateRef.current?.focus()}>
+            Add a day
+          </button>
         </div>
       )}
 
@@ -137,7 +141,13 @@ export default function ItineraryEditor() {
         <h3>Add a day</h3>
         <label>
           Date
-          <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} disabled={addingDay} />
+          <input
+            ref={newDateRef}
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+            disabled={addingDay}
+          />
         </label>
         <label>
           Location

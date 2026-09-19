@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { tripsApi } from "../api/trips";
+
+// How long the "trip deleted" confirmation stays visible.
+export const NOTICE_MS = 3000;
 
 export default function TripList() {
   const navigate = useNavigate();
@@ -11,6 +14,8 @@ export default function TripList() {
   const [createError, setCreateError] = useState(null);
   const [deleteErrors, setDeleteErrors] = useState({});
   const [deletingId, setDeletingId] = useState(null);
+  const [notice, setNotice] = useState(null);
+  const nameInputRef = useRef(null);
 
   function load() {
     setError(null);
@@ -22,6 +27,12 @@ export default function TripList() {
   }
 
   useEffect(load, []);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -43,7 +54,9 @@ export default function TripList() {
     setDeleteErrors((prev) => ({ ...prev, [tripId]: null }));
     try {
       await tripsApi.remove(tripId);
+      const removed = trips.find((t) => t.id === tripId);
       setTrips((prev) => prev.filter((t) => t.id !== tripId));
+      setNotice(`Deleted “${removed?.name ?? "trip"}”`);
     } catch (err) {
       setDeleteErrors((prev) => ({ ...prev, [tripId]: err.message }));
     } finally {
@@ -57,6 +70,7 @@ export default function TripList() {
 
       <form className="create-trip-form" onSubmit={handleCreate}>
         <input
+          ref={nameInputRef}
           type="text"
           placeholder="New trip name"
           value={newName}
@@ -68,6 +82,12 @@ export default function TripList() {
         </button>
         {createError && <p className="inline-error">{createError}</p>}
       </form>
+
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      )}
 
       {trips === null && !error && (
         <ul className="trip-list" aria-busy="true">
@@ -87,7 +107,9 @@ export default function TripList() {
       {trips !== null && !error && trips.length === 0 && (
         <div className="empty-state">
           <p>No trips yet.</p>
-          <p>Create your first trip above to get started.</p>
+          <button type="button" onClick={() => nameInputRef.current?.focus()}>
+            Create your first trip
+          </button>
         </div>
       )}
 

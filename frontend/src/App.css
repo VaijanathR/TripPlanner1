@@ -206,3 +206,9 @@ button.delete-button {
 .share-link-result input {
   flex: 1 1 260px;
 }
+
+.notice {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
