@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { tripsApi } from "../api/trips";
 import { daysApi } from "../api/days";
 import DayEditor from "../components/DayEditor";
+import ShareLink from "../components/ShareLink";
 
 export default function ItineraryEditor() {
   const { tripId } = useParams();
@@ -107,6 +108,7 @@ export default function ItineraryEditor() {
     <div className="page">
       <Link to="/">← Trip List</Link>
       <h1>{trip.name}</h1>
+      <ShareLink tripId={tripId} />
 
       {reorderError && <p className="inline-error">Couldn't reorder days: {reorderError}</p>}
 

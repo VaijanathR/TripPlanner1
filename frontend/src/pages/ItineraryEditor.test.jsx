@@ -60,4 +60,11 @@ describe("ItineraryEditor", () => {
     expect(await screen.findByText(/Couldn't load this trip: network error/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
+
+  it("offers a Get share link action for the trip", async () => {
+    tripsApi.get.mockResolvedValue({ id: 1, name: "Kyoto in Autumn", days: [] });
+    renderEditor();
+
+    expect(await screen.findByRole("button", { name: "Get share link" })).toBeInTheDocument();
+  });
 });

@@ -191,3 +191,18 @@ button.delete-button {
   border-radius: 999px;
   font-size: 0.85em;
 }
+
+.share-link {
+  margin: 8px 0 16px;
+}
+
+.share-link-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-link-result input {
+  flex: 1 1 260px;
+}
