@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { conditionsApi } from "../api/conditions";
 import { daysApi } from "../api/days";
 import ConditionsPanel from "./ConditionsPanel";
@@ -13,7 +13,16 @@ function toDraftActivities(activities) {
   return activities.map((a) => ({ ...a, localId: a.id ?? nextLocalId() }));
 }
 
-export default function DayEditor({ tripId, day, index, dayCount, onSaved, onDeleted, onMove }) {
+// A snapshot of the fields a user can edit, to tell whether anything is unsaved.
+const editableSnapshot = (date, location, notes, activities) =>
+  JSON.stringify([
+    date,
+    location,
+    notes ?? "",
+    activities.map((a) => [a.title, (a.start_time ?? "").slice(0, 5), (a.end_time ?? "").slice(0, 5), a.notes ?? ""]),
+  ]);
+
+export default function DayEditor({ tripId, day, index, dayCount, onSaved, onDeleted, onMove, onDirtyChange }) {
   const [date, setDate] = useState(day.date);
   const [location, setLocation] = useState(day.location);
   const [notes, setNotes] = useState(day.notes ?? "");
@@ -41,6 +50,18 @@ export default function DayEditor({ tripId, day, index, dayCount, onSaved, onDel
     setJustSaved(false);
     setActivities((prev) => prev.filter((a) => a.localId !== localId));
   }
+
+  const dirty =
+    editableSnapshot(date, location, notes, activities) !==
+    editableSnapshot(day.date, day.location, day.notes, day.activities);
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  useEffect(() => {
+    onDirtyChangeRef.current = onDirtyChange;
+  });
+  useEffect(() => {
+    onDirtyChangeRef.current?.(day.id, dirty);
+    return () => onDirtyChangeRef.current?.(day.id, false);
+  }, [dirty, day.id]);
 
   const timeInvalidActivity = activities.find(
     (a) => a.start_time && a.end_time && a.end_time < a.start_time

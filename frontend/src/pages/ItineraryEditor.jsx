@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { tripsApi } from "../api/trips";
 import { daysApi } from "../api/days";
+import { destinationsApi } from "../api/destinations";
 import DayEditor from "../components/DayEditor";
+import DestinationGuide from "../components/DestinationGuide";
+import DestinationPicker from "../components/DestinationPicker";
+import { PinIcon } from "../components/Icons";
 import { HeroScene } from "../components/Illustrations";
 import ShareLink from "../components/ShareLink";
+import { useGuide } from "../hooks/useGuide";
+import { nextSlot } from "../utils/schedule";
 
 export default function ItineraryEditor() {
   const { tripId } = useParams();
@@ -19,6 +25,21 @@ export default function ItineraryEditor() {
 
   const [reorderError, setReorderError] = useState(null);
   const newDateRef = useRef(null);
+
+  const [changingDestination, setChangingDestination] = useState(false);
+  // Which tab is showing once a destination is set; null = pick a sensible default.
+  const [view, setView] = useState(null);
+  const [addMessage, setAddMessage] = useState(null);
+  // Which days have edits the user hasn't saved yet (tracked without re-rendering).
+  const dirtyDays = useRef(new Set());
+  const [dayVersions, setDayVersions] = useState({});
+  const handleDirtyChange = useCallback((dayId, dirty) => {
+    if (dirty) dirtyDays.current.add(dayId);
+    else dirtyDays.current.delete(dayId);
+  }, []);
+
+  const destination = trip?.destination ?? null;
+  const { guide, error: guideError, retry: retryGuide } = useGuide(tripId, destination?.geoname_id);
 
   function load() {
     setError(null);
@@ -64,6 +85,50 @@ export default function ItineraryEditor() {
     setTrip((prev) => ({ ...prev, days: prev.days.filter((d) => d.id !== dayId) }));
   }
 
+  async function handleChooseDestination(geonameId) {
+    const updated = await destinationsApi.set(tripId, geonameId);
+    setTrip((prev) => ({ ...prev, destination: updated.destination }));
+    setChangingDestination(false);
+  }
+
+  // Adds a popular place to a day as a new activity. Days with unsaved edits are
+  // refused: adding would replace what the user has typed.
+  async function handleAddPlace(place, dayId) {
+    const index = trip.days.findIndex((d) => d.id === dayId);
+    const day = trip.days[index];
+    setAddMessage(null);
+    if (dirtyDays.current.has(dayId)) {
+      setAddMessage({ ok: false, text: `Save the changes to Day ${index + 1} first, then add ${place.name}.` });
+      return;
+    }
+    const slot = nextSlot(day.activities);
+    const activities = [
+      ...day.activities.map((a, i) => ({
+        id: a.id,
+        title: a.title,
+        start_time: a.start_time,
+        end_time: a.end_time,
+        notes: a.notes,
+        order_index: i,
+      })),
+      { id: null, title: place.name, ...slot, notes: place.description ?? null, order_index: day.activities.length },
+    ];
+    try {
+      const updated = await daysApi.update(tripId, dayId, {
+        date: day.date,
+        location: day.location,
+        notes: day.notes,
+        activities,
+      });
+      handleDaySaved(updated);
+      // Re-create that day's editor so it shows the saved activities.
+      setDayVersions((prev) => ({ ...prev, [dayId]: (prev[dayId] ?? 0) + 1 }));
+      setAddMessage({ ok: true, text: `Added “${place.name}” to Day ${index + 1}.` });
+    } catch (err) {
+      setAddMessage({ ok: false, text: `Couldn't add ${place.name}: ${err.message}` });
+    }
+  }
+
   async function handleMove(index, direction) {
     const days = trip.days;
     const targetIndex = index + direction;
@@ -106,18 +171,88 @@ export default function ItineraryEditor() {
     );
   }
 
+  const heroPhoto = guide?.photos?.city?.image_url ?? null;
+  // With a destination the page has two tabs. Both stay mounted (just hidden) so
+  // switching never throws away what someone has typed into a day.
+  const activeView = view ?? (trip.days.length > 0 ? "plan" : "discover");
+
   return (
     <>
-      <header className="trip-hero">
-        <HeroScene className="hero-art" />
+      <header
+        className={`trip-hero${heroPhoto ? " has-photo" : ""}`}
+        style={heroPhoto ? { backgroundImage: `linear-gradient(rgba(6, 30, 42, 0.35), rgba(6, 30, 42, 0.7)), url("${heroPhoto}")` } : undefined}
+      >
+        {!heroPhoto && <HeroScene className="hero-art" />}
         <div className="hero-inner">
           <Link className="back-link" to="/">← Trip List</Link>
           <h1>{trip.name}</h1>
+          {destination && (
+            <p className="hero-destination">
+              <PinIcon width={16} height={16} />
+              {[destination.city, destination.state, destination.country].filter(Boolean).join(", ")}
+              {!changingDestination && (
+                <button type="button" className="btn-light" onClick={() => setChangingDestination(true)}>
+                  Change destination
+                </button>
+              )}
+            </p>
+          )}
           <ShareLink tripId={tripId} />
         </div>
       </header>
 
     <div className="page">
+      {(!destination || changingDestination) && (
+        <DestinationPicker
+          onChoose={handleChooseDestination}
+          onCancel={destination ? () => setChangingDestination(false) : undefined}
+        />
+      )}
+      {addMessage && (
+        <p className={addMessage.ok ? "notice" : "inline-error"} role={addMessage.ok ? "status" : "alert"}>
+          {addMessage.text}
+        </p>
+      )}
+
+      {destination && (
+        <div className="view-tabs" role="tablist" aria-label="Trip sections">
+          <button
+            type="button"
+            role="tab"
+            id="tab-plan"
+            aria-selected={activeView === "plan"}
+            aria-controls="panel-plan"
+            onClick={() => setView("plan")}
+          >
+            Itinerary
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-discover"
+            aria-selected={activeView === "discover"}
+            aria-controls="panel-discover"
+            onClick={() => setView("discover")}
+          >
+            Discover {destination.city}
+          </button>
+        </div>
+      )}
+
+      {destination && (
+        <div id="panel-discover" role="tabpanel" aria-labelledby="tab-discover" hidden={activeView !== "discover"}>
+          <DestinationGuide
+            destination={destination}
+            guide={guide}
+            error={guideError}
+            onRetry={retryGuide}
+            days={trip.days}
+            onAddPlace={handleAddPlace}
+          />
+        </div>
+      )}
+
+      <div id="panel-plan" role={destination ? "tabpanel" : undefined} aria-labelledby={destination ? "tab-plan" : undefined} hidden={destination ? activeView !== "plan" : false}>
       {reorderError && <p className="inline-error">Couldn't reorder days: {reorderError}</p>}
 
       {trip.days.length === 0 && (
@@ -132,7 +267,7 @@ export default function ItineraryEditor() {
       <div className="day-list">
         {trip.days.map((day, index) => (
           <DayEditor
-            key={day.id}
+            key={`${day.id}:${dayVersions[day.id] ?? 0}`}
             tripId={tripId}
             day={day}
             index={index}
@@ -140,6 +275,7 @@ export default function ItineraryEditor() {
             onSaved={handleDaySaved}
             onDeleted={handleDayDeleted}
             onMove={handleMove}
+            onDirtyChange={handleDirtyChange}
           />
         ))}
       </div>
@@ -174,6 +310,7 @@ export default function ItineraryEditor() {
         </button>
         {addDayError && <p className="inline-error">{addDayError}</p>}
       </form>
+      </div>
     </div>
     </>
   );

@@ -210,4 +210,35 @@ describe("TripList", () => {
     expect(mockNavigate).not.toHaveBeenCalled();
     expect(screen.getByPlaceholderText("New trip name")).toHaveValue("Dup");
   });
+
+  it("shows where each trip is going, and only for trips that have a destination", async () => {
+    tripsApi.list.mockResolvedValue({
+      trips: [
+        { id: 1, name: "Kyoto trip", start_date: null, end_date: null, day_count: 0, destination: { city: "Kyoto", country: "Japan" } },
+        { id: 2, name: "Undecided", start_date: null, end_date: null, day_count: 0, destination: null },
+      ],
+    });
+    renderTripList();
+
+    const kyoto = (await screen.findByText("Kyoto trip")).closest("li");
+    const undecided = screen.getByText("Undecided").closest("li");
+    expect(within(kyoto).getByText("Kyoto, Japan")).toBeInTheDocument();
+    expect(within(undecided).queryByText(/Japan/)).not.toBeInTheDocument();
+  });
+
+  it("uses the destination photo as the trip's cover, over a gradient so a slow photo never leaves a blank card", async () => {
+    tripsApi.list.mockResolvedValue({
+      trips: [
+        { id: 1, name: "With photo", start_date: null, end_date: null, day_count: 0, cover_image_url: "https://img/kyoto.jpg" },
+        { id: 2, name: "Without photo", start_date: null, end_date: null, day_count: 0, cover_image_url: null },
+      ],
+    });
+    renderTripList();
+
+    const withPhoto = (await screen.findByText("With photo")).closest("li").querySelector(".trip-cover");
+    const without = screen.getByText("Without photo").closest("li").querySelector(".trip-cover");
+    expect(withPhoto.style.backgroundImage).toMatch(/url\("?https:\/\/img\/kyoto\.jpg"?\).*linear-gradient/);
+    expect(without.style.backgroundImage).toContain("linear-gradient");
+    expect(without.style.backgroundImage).not.toContain("url(");
+  });
 });

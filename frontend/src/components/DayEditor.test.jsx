@@ -227,4 +227,87 @@ describe("DayEditor", () => {
     expect(screen.getByLabelText("Notes")).toHaveValue("Bring a jacket");
     expect(screen.getByDisplayValue("Fushimi Inari hike")).toBeInTheDocument();
   });
+
+  describe("reporting unsaved changes to the page", () => {
+    it("starts clean, becomes dirty when a field is edited, and clean again when the edit is undone", () => {
+      const onDirtyChange = vi.fn();
+      renderDayEditor({ onDirtyChange });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+
+      fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Osaka, Japan" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, true);
+
+      fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Kyoto, Japan" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+    });
+
+    it("counts an edited activity, an added activity and a removed activity as unsaved", () => {
+      const onDirtyChange = vi.fn();
+      renderDayEditor({ onDirtyChange });
+
+      fireEvent.change(screen.getByDisplayValue("Fushimi Inari hike"), { target: { value: "Fushimi at dawn" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, true);
+      fireEvent.change(screen.getByDisplayValue("Fushimi at dawn"), { target: { value: "Fushimi Inari hike" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+
+      fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, true);
+    });
+
+    it("does not treat the server's HH:MM:SS times or null notes as edits", () => {
+      const onDirtyChange = vi.fn();
+      const day = {
+        ...baseDay, notes: null,
+        activities: [{ id: 100, title: "Hike", start_time: "08:00:00", end_time: "11:00:00", notes: null, order_index: 0 }],
+      };
+      renderDayEditor({ day, onDirtyChange });
+
+      expect(onDirtyChange).not.toHaveBeenCalledWith(10, true);
+    });
+
+    it("treats a time edited and then put back as unchanged, even though the server stores seconds", () => {
+      const onDirtyChange = vi.fn();
+      const day = {
+        ...baseDay,
+        activities: [{ id: 100, title: "Hike", start_time: "08:00:00", end_time: "11:00:00", notes: null, order_index: 0 }],
+      };
+      renderDayEditor({ day, onDirtyChange });
+      const start = document.querySelectorAll('input[type="time"]')[0];
+
+      fireEvent.change(start, { target: { value: "09:00" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, true);
+      fireEvent.change(start, { target: { value: "08:00" } }); // the time input reports HH:MM, the server HH:MM:SS
+
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+    });
+
+    it("is clean again once the page hands back the saved day", () => {
+      const onDirtyChange = vi.fn();
+      const props = { tripId: "1", day: baseDay, index: 0, dayCount: 1, onSaved: vi.fn(), onDeleted: vi.fn(), onMove: vi.fn(), onDirtyChange };
+      const { rerender } = render(<DayEditor {...props} />);
+      fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Osaka, Japan" } });
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, true);
+
+      rerender(<DayEditor {...props} day={{ ...baseDay, location: "Osaka, Japan" }} />);
+
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+    });
+
+    it("reports clean when it goes away, so a removed day can't block adding to others", () => {
+      const onDirtyChange = vi.fn();
+      const { unmount } = render(
+        <DayEditor tripId="1" day={baseDay} index={0} dayCount={1} onSaved={vi.fn()} onDeleted={vi.fn()} onMove={vi.fn()} onDirtyChange={onDirtyChange} />
+      );
+      fireEvent.change(screen.getByLabelText("Location"), { target: { value: "Osaka, Japan" } });
+
+      unmount();
+
+      expect(onDirtyChange).toHaveBeenLastCalledWith(10, false);
+    });
+
+    it("works without a listener", () => {
+      renderDayEditor();
+      expect(() => fireEvent.change(screen.getByLabelText("Location"), { target: { value: "x" } })).not.toThrow();
+    });
+  });
 });

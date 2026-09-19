@@ -133,11 +133,25 @@ export default function TripList() {
           {trips.map((trip) => (
             <li key={trip.id} className="trip-card">
               <Link to={`/trips/${trip.id}`}>
-                <div className="trip-cover" style={{ backgroundImage: coverGradient(trip.name) }}>
+                <div
+                  className="trip-cover"
+                  style={{
+                    // The gradient sits under the photo, so a slow or missing
+                    // image still leaves a finished-looking card.
+                    backgroundImage: trip.cover_image_url
+                      ? `url("${trip.cover_image_url}"), ${coverGradient(trip.name)}`
+                      : coverGradient(trip.name),
+                  }}
+                >
                   <PinIcon />
                 </div>
                 <div className="trip-card-body">
                   <strong>{trip.name}</strong>
+                  {trip.destination && (
+                    <span className="trip-destination">
+                      {[trip.destination.city, trip.destination.country].filter(Boolean).join(", ")}
+                    </span>
+                  )}
                   <span>
                     <CalendarIcon width={15} height={15} />
                     {trip.day_count === 0

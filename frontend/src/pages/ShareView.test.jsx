@@ -113,6 +113,22 @@ describe("ShareView", () => {
     expect(sharingApi.conditions).toHaveBeenCalledWith("tok-1", 11);
   });
 
+  it("shows where the trip is going when it has a destination, and nothing when it doesn't", async () => {
+    sharingApi.read.mockResolvedValueOnce({
+      ...sharedTrip,
+      destination: { geoname_id: 1, city: "Kyoto", state: "Kyoto", country: "Japan" },
+    });
+    const { unmount } = renderShareView();
+
+    expect(await screen.findByText("Kyoto, Kyoto, Japan")).toBeInTheDocument();
+    unmount();
+
+    sharingApi.read.mockResolvedValueOnce({ ...sharedTrip, destination: null });
+    renderShareView();
+    await screen.findByText("Kyoto in Autumn");
+    expect(document.querySelector(".hero-destination")).toBeNull();
+  });
+
   it("is read-only: no inputs, buttons, or edit/add/delete controls anywhere", async () => {
     sharingApi.read.mockResolvedValue(sharedTrip);
     renderShareView();

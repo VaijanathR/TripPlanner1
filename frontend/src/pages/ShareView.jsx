@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { sharingApi } from "../api/sharing";
 import Brand from "../components/Brand";
 import ConditionsPanel from "../components/ConditionsPanel";
+import { PinIcon } from "../components/Icons";
 import { HeroScene } from "../components/Illustrations";
 
 // HH:MM:SS from the API -> HH:MM for display.
@@ -88,6 +89,12 @@ export default function ShareView() {
         <div className="hero-inner">
           <p className="eyebrow">Shared itinerary</p>
           <h1>{trip.name}</h1>
+          {trip.destination && (
+            <p className="hero-destination">
+              <PinIcon width={16} height={16} />
+              {[trip.destination.city, trip.destination.state, trip.destination.country].filter(Boolean).join(", ")}
+            </p>
+          )}
         </div>
       </header>
       <div className="page">

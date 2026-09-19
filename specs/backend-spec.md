@@ -146,6 +146,42 @@ at least 32 characters, signs login tokens) and `GOOGLE_CLIENT_ID`
 - Trips that existed before accounts were introduced are kept, owned by a
   placeholder account that nobody can sign in to.
 
+## Destinations and guides
+
+Sources are free and need no API key, and are called only from
+`backend/upstream.py`: Open-Meteo (geocoding), Wikipedia (photos, blurbs) and
+Wikidata (notable places). Endpoint shapes are in `specs/api-contract.md`
+("Destinations").
+
+### Acceptance criteria
+- Place search returns ranked candidates, narrowed strictly by country and
+  boosted by state; input is validated; a geocoder outage is a `503`.
+- A trip's destination is stored from the geocoder's answer for the chosen id —
+  never from client-sent names or coordinates — and only the trip's owner can set,
+  change, clear or read the guide for it.
+- A guide has photos of the city, state and country, popular places in the city
+  (≤15 km) and around it (15–30 km), and things to do derived from the places'
+  types.
+- Each source fails independently: an outage or rate limit marks only its own
+  section `unavailable`; the rest of the guide and the request still succeed.
+- A photo is used only if it is about the right place: a same-named place elsewhere
+  is rejected by location, a disambiguation page is skipped, a state page must
+  describe a region, and a flag or map is never the country photo.
+- A place listed under several types appears once, under its most specific theme;
+  places without an English name are dropped; places are ranked by how widely they
+  are covered.
+- A guide is built once, in the background, stored in the database, shared by
+  trips to the same place, served without touching the sources while fresh
+  (30 days), rebuilt in the background when stale (old content still served),
+  built at most once at a time, retried if a build never finished, and marked
+  `failed` (and retried next request) if every source failed or the build crashed.
+- The shared HTTP helper identifies the app with a `User-Agent`, tells "not found"
+  from "rate limited" from other errors, retries a gateway error once (never a
+  429), and turns network failures and non-JSON bodies into a typed error.
+- The trip list shows each trip's destination and, once its guide has one, a cover
+  photo; a shared trip shows its destination but never its share token.
+- Existing trips survive the migration with no destination.
+
 ## Out of scope for this spec
 - Exact endpoint routes, request/response schemas, and status codes —
   covered in `specs/api-contract.md` (not yet written).

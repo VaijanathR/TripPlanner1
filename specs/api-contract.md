@@ -255,6 +255,61 @@ frontend-spec.md), never an exception that surfaces as a `5xx`.
   { "error": { "code": "not_found", "message": "Day not found" } }
   ```
 
+## Destinations
+
+A trip can have a destination: one real place, chosen from the geocoder's
+candidates. Trip responses (`GET /api/trips/{id}`, the shared trip, and each
+entry in `GET /api/trips`) gain
+`"destination": null | { "geoname_id": 1857910, "city": "Kyoto", "state": "Kyoto", "country": "Japan", "country_code": "JP", "latitude": 35.02, "longitude": 135.75 }`,
+and each `GET /api/trips` entry also gains `"cover_image_url": null | "https://..."`
+(the destination's photo, once its guide has one).
+
+### `GET /api/destinations/search?city=&state=&country=`
+Candidates for what the user typed. `city` is required (2–100 characters);
+`state` and `country` (optional, ≤100) narrow the results.
+- **200** → `{ "candidates": [ { "geoname_id", "city", "state", "country", "country_code", "latitude", "longitude", "population" } ] }`
+  — at most 8, best first: a matching state first, then larger population.
+  `country` narrows *strictly* (name prefix, case-insensitive, or country code):
+  a country with no such city yields `[]`, never the wrong city.
+- **422** — `city` missing or out of bounds. **503** `destinations_unavailable` —
+  the geocoding service is down.
+
+### `PUT /api/trips/{trip_id}/destination`
+- **Request**: `{ "geoname_id": 1857910 }`. Only the id is taken from the client;
+  the name and coordinates stored come from the geocoder.
+- **200** → the trip detail with its new `destination`. Starts building the
+  guide in the background.
+- **404** `place_not_found` (unknown id) or `not_found` (not the caller's trip);
+  **422** (id not a positive integer); **503** `destinations_unavailable`, in which
+  case the old destination is kept.
+
+### `DELETE /api/trips/{trip_id}/destination`
+- **200** → the trip detail with `"destination": null`. **404** if not the caller's trip.
+
+### `GET /api/trips/{trip_id}/guide`
+Photos, popular places and things to do for the trip's destination.
+- **200** → `{ "status", "destination", "photos", "gallery", "places", "activities", "sections" }`
+  - `status`: `no_destination` | `building` | `ready` | `failed`.
+  - `photos`: `{ "city", "state", "country" }`, each `null` or
+    `{ title, description, extract, image_url, credit_url, page_url }`. The
+    country image is a real photograph, never a flag or map.
+  - `places`: `{ "city": [...], "around": [...] }` — up to 12 each; **city** is
+    within 15 km, **around** is 15–30 km. Each place: `{ id, name, description,
+    type, theme, sitelinks, distance_km, latitude, longitude, image_url, credit_url, wikidata_url }`,
+    ranked by how many Wikipedia language editions cover it.
+  - `activities`: things to do, derived by grouping places by theme:
+    `{ theme, label, summary, places: [names] }`, most popular theme first.
+  - `gallery`: up to 6 `{ title, image_url, credit_url }` taken from the places.
+  - `sections`: `{ photos, places_city, places_around }`, each `pending` | `ready` |
+    `unavailable`. **Each source fails on its own**: an outage marks only its
+    own section `unavailable` and never turns the request into an error.
+- While `status` is `building` (the first look-up of a city can take up to a
+  minute) the response carries whatever is ready so far; clients poll.
+- Guides are cached per place in the database and shared by every trip going
+  there; a guide older than 30 days is rebuilt in the background while the old
+  one is served. A `failed` guide is rebuilt on the next request.
+- **404** if the trip isn't the caller's.
+
 ## Sharing
 
 ### `POST /api/trips/{trip_id}/share`
@@ -302,6 +357,8 @@ for a real day under a valid token.
 ## Out of scope
 - Password reset, email verification, changing email/password, and account
   deletion.
+- Destinations below city level, multi-city trips with a destination per day, and
+  any place data beyond Wikipedia/Wikidata (hotels, restaurants, opening hours).
 - Revoking a login token before it expires (tokens are stateless; logging
   out only discards the client's copy).
 - Rate limiting / lockout on the login endpoints.

@@ -130,6 +130,38 @@ maps/weather panels as the Editor, but with no edit controls.
 - Given the user requests a share link and it fails, the UI shows an
   inline error and offers a "Retry" action.
 
+### Destination and Discover
+
+- Given a trip has no destination, the Editor asks "Where are you going?" with
+  Country, State / region and City inputs; a search needs at least a 2-letter city.
+- Given a search, the UI lists every matching place ("Paris, Texas, United States"
+  and "Paris, Île-de-France Region, France") to choose from; when nothing matches it
+  says so; a failed search shows why and can be retried.
+- Given the user chooses a place, the destination is saved and the guide appears;
+  if saving fails the reason is shown and the user can choose again.
+- Given a trip has a destination, the header shows it with a "Change destination"
+  action (with Cancel), and two tabs appear: **Itinerary** and **Discover {city}**.
+  The itinerary is the default tab when the trip has days, Discover when it has none.
+  Switching tabs never discards what someone has typed into a day.
+- Given the guide is ready, Discover shows photos of the city, state and country
+  (each labelled and credited), things to do (grouped by theme, listing places),
+  popular places in the city, places around it, and a photo gallery, with the
+  Wikipedia / Wikimedia / Wikidata attribution.
+- Given the guide is still being built, the UI says so, shows whatever has arrived,
+  and keeps checking (for a bounded time); a section that is unavailable says so
+  without hiding the sections that worked; a wholly failed guide offers "Try again";
+  a guide that can't be loaded offers "Retry" and keeps any earlier content.
+- Given a photo can't be loaded, a coloured gradient stands in — never a broken image.
+- Given the city photo exists, it becomes the Editor's header image.
+- Given the user adds a popular place to a day, it is appended as a new activity
+  right after that day's last activity (09:00 for an empty day, two hours long,
+  never past midnight), existing activities are kept, the day shows it, and the
+  confirmation names the day. If the day has unsaved edits the add is refused with
+  a message so nothing is overwritten. A failure shows why and changes nothing.
+- Given the trip list, a trip with a destination shows it, and shows its destination
+  photo as the card cover (a gradient under it, so a slow photo never leaves a blank
+  card).
+
 ### Share View
 
 - Given the shared itinerary is being fetched, the UI shows a loading
@@ -142,6 +174,7 @@ maps/weather panels as the Editor, but with no edit controls.
 - Given the fetch succeeds and the itinerary has one or more days, the
   UI renders each day's activities/notes and maps/weather panel,
   read-only (no edit, add, or delete controls anywhere on the page).
+- Given the shared trip has a destination, its header shows it (read-only).
 - Given the fetch fails for a reason other than an invalid link (e.g.
   network/server error), the UI shows an error state with a "Retry"
   action.
