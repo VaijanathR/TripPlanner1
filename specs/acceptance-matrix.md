@@ -132,6 +132,18 @@ From [backend-spec.md](backend-spec.md) "Destinations and guides". All backend t
 | H10 | The trip list shows destinations and cover photos; a shared trip shows its destination but never its token | `test_the_trip_list_shows_the_destination_and_a_cover_photo_once_the_guide_has_one`, `test_a_trip_whose_guide_is_not_ready_yet_has_a_destination_but_no_cover`, `test_the_cover_image_prefers_the_city_photo_then_the_first_place_photo`, `test_a_shared_trip_shows_its_destination_but_never_the_share_token` | Yes |
 | H11 | Existing trips survive the migration with no destination; guide rows are unique per place | `test_trips_get_destination_columns_and_a_guide_cache_table`, `test_existing_trips_survive_the_destination_migration_with_no_destination`, `test_a_second_guide_row_for_the_same_place_is_refused` | Yes |
 
+## J. Data persistence (backend)
+
+From [backend-spec.md](backend-spec.md) "Data persistence". Found the hard way: before this, every deploy to Azure silently wiped all accounts and trips (the database sat in a per-deployment temporary folder; a plain restart kept it, a deploy did not).
+
+| # | Criterion | Test(s) | Covered |
+|---|---|---|---|
+| J1 | With no configuration the database is a local file; an empty setting counts as unset | `test_the_default_database_is_a_local_file_so_development_and_tests_need_no_setup`, `test_an_empty_database_url_falls_back_to_the_default` | Yes |
+| J2 | `DATABASE_URL` moves the database and creates its folder; the absolute four-slash form used on Azure works | `test_database_url_moves_the_database_and_creates_its_folder`, `test_an_absolute_sqlite_url_with_four_slashes_works_like_the_one_used_on_azure` | Yes |
+| J3 | Migrations use the same configured database and leave the local default untouched | `test_migrations_run_against_the_configured_database_not_the_local_default` | Yes |
+| J4 | Data survives a new process (restart or deploy) | `test_data_written_by_the_app_is_still_there_after_the_process_restarts` | Yes |
+| J5 | Foreign keys are enforced on the configured database | `test_foreign_keys_are_enforced_on_the_configured_database` | Yes |
+
 ## I. Frontend spec: Destination and Discover
 
 Tests are in `pages/ItineraryEditor.test.jsx`, `pages/TripList.test.jsx`, `components/DestinationPicker.test.jsx`, `components/DestinationGuide.test.jsx`, `components/PlaceCard.test.jsx`, `components/Photo.test.jsx`, `components/DayEditor.test.jsx`, `hooks/useGuide.test.jsx`, `utils/schedule.test.js`, `utils/format.test.js` and `api/destinations.test.js`.

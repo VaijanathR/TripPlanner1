@@ -187,6 +187,24 @@ Wikidata (notable places). Endpoint shapes are in `specs/api-contract.md`
   photo; a shared trip shows its destination but never its share token.
 - Existing trips survive the migration with no destination.
 
+## Data persistence
+
+The database location is configuration: `DATABASE_URL` (default
+`sqlite:///./trip_planner.db`, right for development and tests). Production must
+point it at storage that outlives a deploy; on Azure App Service that is `/home`
+(`sqlite:////home/data/trip_planner.db`), because the app itself runs from a
+per-deployment temporary folder that is discarded on every deploy.
+
+### Acceptance criteria
+- With no configuration the database is a local file, so development and tests
+  need no setup; an empty `DATABASE_URL` counts as unset.
+- `DATABASE_URL` moves the database, and its folder is created if missing (a fresh
+  persistent volume has none).
+- Migrations run against the same configured database as the app, never the local
+  default, and leave the default untouched.
+- Data written by one process is present for the next one (a restart or deploy).
+- Foreign keys are enforced on the configured database.
+
 ## Out of scope for this spec
 - Exact endpoint routes, request/response schemas, and status codes —
   covered in `specs/api-contract.md` (not yet written).

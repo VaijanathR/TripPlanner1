@@ -66,3 +66,6 @@ A trip can have a destination (country / state / city, picked from geocoder cand
 - Frontend: `hooks/useGuide.js` (polling), `components/DestinationPicker.jsx`, `DestinationGuide.jsx`, `PlaceCard.jsx`, `Photo.jsx` (gradient fallback for broken images). "Add to itinerary" refuses days with unsaved edits (`DayEditor` reports dirtiness via `onDirtyChange`).
 - Dev: the repo is on `/mnt/d`, where Vite's file watcher doesn't see edits — restart the dev server after changes (details in memory).
 
+## Database persistence (important on Azure)
+`backend/database.py` reads `DATABASE_URL` (default `sqlite:///./trip_planner.db`); `alembic/env.py` honours the same variable. **On Azure the app runs from a per-deployment temp folder, so with the default every deploy erased all users and trips** (a plain restart kept them). Production must set the app setting `DATABASE_URL=sqlite:////home/data/trip_planner.db` (`/home` is a persistent CIFS volume; SQLite there was tested: journal mode `delete`, 3 concurrent writers fine, ~85 ms per commit). The folder is created automatically. For real durability at scale, move to a hosted Postgres (SQLAlchemy code is portable; migrations use batch mode).
+
