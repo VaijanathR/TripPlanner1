@@ -27,11 +27,11 @@ jobs:
       - run: npm ci --prefix frontend
       - run: npm test --prefix frontend
 
-  # Deploys the backend to Azure App Service. The frontend is not deployed
-  # here -- Vercel's GitHub integration deploys it directly on push once the
-  # repo is connected in the Vercel dashboard, independent of this workflow.
+  # Both deploys run only on a push to main, and only after BOTH test jobs
+  # pass. Vercel's own Git auto-deploy is disabled (frontend/vercel.json), so
+  # this job is the only way the frontend goes live.
   deploy-backend:
-    needs: backend-tests
+    needs: [backend-tests, frontend-tests]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -41,3 +41,24 @@ jobs:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: backend
+
+  deploy-frontend:
+    needs: [backend-tests, frontend-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --global vercel@59
+      # Run from the repo root: the project's Root Directory setting
+      # (frontend) is applied by the CLI. Build-time env vars such as
+      # VITE_API_URL are pulled from the Vercel project.
+      - run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - run: vercel build --prod --token="$VERCEL_TOKEN"
+      - run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

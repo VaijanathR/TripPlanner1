@@ -58,6 +58,33 @@ def test_validate_activities_does_not_raise_when_end_time_after_start_time():
     _validate_activities(activities)  # should not raise
 
 
+# Test type (endpoint-level companion): the unit tests above only prove the
+# validator works in isolation. This proves it is actually wired into the
+# save path -- an invalid day is rejected with 422 and nothing is persisted.
+def test_saving_a_day_with_end_before_start_is_rejected_by_the_endpoint(client, trip):
+    day = client.post(
+        f"/api/trips/{trip['id']}/days", json={"date": "2026-11-03", "location": "Kyoto, Japan"}
+    ).json()
+
+    resp = client.put(
+        f"/api/trips/{trip['id']}/days/{day['id']}",
+        json={
+            "date": "2026-11-03",
+            "location": "Kyoto, Japan",
+            "activities": [
+                {"id": None, "title": "Bad", "start_time": "12:00", "end_time": "09:00", "order_index": 0}
+            ],
+        },
+    )
+
+    assert resp.status_code == 422
+    assert resp.json()["error"]["code"] == "validation_error"
+    assert "activities[0].end_time" in resp.json()["error"]["fields"]
+
+    saved_day = client.get(f"/api/trips/{trip['id']}").json()["days"][0]
+    assert saved_day["activities"] == []
+
+
 # ---------------------------------------------------------------------------
 # Criterion: "The itinerary still renders with an 'unavailable' state when
 # the maps/weather call times out"
