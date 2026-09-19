@@ -7,10 +7,15 @@ Tests replace `get_json` so nothing ever touches the network.
 """
 
 import threading
+import time
 
 import httpx
 
 USER_AGENT = "TripPlannerCourseProject/1.0 (student project; https://github.com/VaijanathR/TripPlanner1)"
+
+# A gateway error from Wikidata's proxy is usually momentary; try once more.
+RETRY_STATUSES = {502, 503, 504}
+RETRY_DELAY_SECONDS = 3.0
 
 # Wikimedia asks for modest concurrency; two in flight is plenty for us.
 _slots = threading.BoundedSemaphore(2)
@@ -28,10 +33,10 @@ class UpstreamRateLimited(UpstreamError):
     """The upstream answered 429."""
 
 
-def get_json(url: str, params: dict | None = None, timeout: float = 8.0):
+def _fetch(url: str, params: dict | None, timeout: float) -> httpx.Response:
     try:
         with _slots:
-            resp = httpx.get(
+            return httpx.get(
                 url,
                 params=params,
                 headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
@@ -40,6 +45,13 @@ def get_json(url: str, params: dict | None = None, timeout: float = 8.0):
             )
     except httpx.HTTPError as exc:
         raise UpstreamError(str(exc)) from exc
+
+
+def get_json(url: str, params: dict | None = None, timeout: float = 8.0):
+    resp = _fetch(url, params, timeout)
+    if resp.status_code in RETRY_STATUSES:
+        time.sleep(RETRY_DELAY_SECONDS)
+        resp = _fetch(url, params, timeout)
     if resp.status_code == 404:
         raise UpstreamNotFound(url)
     if resp.status_code == 429:

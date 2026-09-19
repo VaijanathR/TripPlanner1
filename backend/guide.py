@@ -25,9 +25,9 @@ WIKI_SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 WIKI_API = "https://en.wikipedia.org/w/api.php"
 
 CITY_RADIUS_KM = 15  # "in the city"; ~3-4 s on Wikidata
-AROUND_RADIUS_KM = 40  # "around the city"; slow, so background-only
+AROUND_RADIUS_KM = 30  # "around the city"; ~15 s. (40 km is dropped by Wikidata's gateway: 502.)
 CITY_MIN_LINKS = 10
-AROUND_MIN_LINKS = 25
+AROUND_MIN_LINKS = 20
 PLACES_PER_RING = 12
 FRESH_FOR = datetime.timedelta(days=30)
 BUILD_TIMEOUT = datetime.timedelta(minutes=5)

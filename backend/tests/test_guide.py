@@ -343,7 +343,7 @@ def test_the_city_ring_and_the_wider_ring_are_queried_with_the_right_radii(monke
     guide.build_guide(KYOTO, lambda p: None)
 
     queries = [params["query"] for _, params in f.calls_to(guide.WIKIDATA_SPARQL)]
-    assert '"15"' in queries[0] and '"40"' in queries[1] and "FILTER(?dist >= 15)" in queries[1]
+    assert '"15"' in queries[0] and '"30"' in queries[1] and "FILTER(?dist >= 15)" in queries[1]
 
 
 def test_a_city_without_a_state_skips_the_state_photo(monkeypatch):
