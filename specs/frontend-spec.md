@@ -5,6 +5,11 @@ screens, flow, and behavior only.
 
 ## Screens
 
+### 0. Login
+Log in or create an account with an email and password, or with Google
+(when it is configured). Every screen except the Share View requires a
+login.
+
 ### 1. Trip List
 All of a user's trips. Shows every trip the user has created, each as a
 card with trip name, date range, and day count. Actions: open a trip,
@@ -37,6 +42,29 @@ maps/weather panels as the Editor, but with no edit controls.
    or delete a trip, removing it and invalidating its share link.
 
 ## Acceptance Criteria
+
+### Login
+
+- Given a visitor who is not logged in opens the Trip List or an Itinerary
+  Editor address, the UI sends them to the Login screen, and after a
+  successful login returns them to the page they asked for. No trips are
+  requested before they log in.
+- Given the Login screen, the user can switch between "Log in" and "Create
+  account".
+- Given a log-in or sign-up request fails, the UI shows the reason inline,
+  keeps the email and password the user typed, and stays on the Login screen.
+- Given the user creates an account with a password shorter than 8
+  characters, the UI explains why before sending any request.
+- Given the email is already registered, the UI says so.
+- Given Google sign-in is configured, the user can sign in with it; if
+  Google's script can't load, the UI says so and email + password still work.
+- Given a logged-in user, the UI shows who is logged in and a "Log out"
+  action; logging out returns to the Login screen and forgets the session.
+- Given a stored session the server no longer accepts, the UI treats the
+  user as logged out (no error screen); given the server simply can't be
+  reached while checking it, the UI shows a "Retry", not the Login screen.
+- Given someone opens a Share View link, no login is required and no
+  session check is made.
 
 ### Trip List
 
@@ -125,5 +153,4 @@ maps/weather panels as the Editor, but with no edit controls.
 - Visual design, styling, and component library choices.
 - Exact request/response shapes — covered in `specs/api-contract.md`
   (not yet written).
-- Authentication/authorization model for the Trip List and Editor
-  screens.
+- Password reset, email verification, and changing account details.

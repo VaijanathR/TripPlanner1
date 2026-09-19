@@ -27,11 +27,55 @@ including error cases. No implementation code.
   It is never used for an upstream maps/weather failure — see
   [Day conditions](#day-conditions-mapsweather) below, which is the one
   endpoint required to always resolve to `200`.
-- No authentication model exists yet (deferred in both
-  frontend-spec.md and backend-spec.md). `GET /api/trips` and the
-  trip-scoped endpoints below currently operate over *all* trips —
-  this is a known gap, not a final design, and is called out again in
-  [Out of scope](#out-of-scope).
+- Authentication: every endpoint requires a login token
+  (`Authorization: Bearer <token>`, obtained from [Auth](#auth)) **except**
+  the three login endpoints and the two public `/api/share/{share_token}`
+  reads. A missing, malformed, tampered or expired token is
+  `401 {"error": {"code": "unauthenticated", ...}}`, checked before the
+  request body is validated. Every trip belongs to the user who created it;
+  a trip (or a day, or a share-link request) belonging to someone else is
+  answered exactly like one that doesn't exist — `404`, same body — so
+  its existence is never revealed.
+
+## Auth
+
+Login tokens are short-lived (7 days) and stateless; "logging out" is the
+client discarding its token. The token goes in an `Authorization` header,
+not a cookie, because the frontend and API are on different domains.
+
+### `POST /api/auth/register`
+- **Request**: `{ "email": "a@b.co", "password": "at least 8 characters" }`.
+  Email is trimmed and lower-cased; password is 8–128 characters.
+- **201** → `{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "a@b.co" } }`
+- **409** `email_taken` — an account with this email exists.
+- **422** `validation_error` — invalid email or password length.
+
+### `POST /api/auth/login`
+- **Request**: `{ "email": "...", "password": "..." }`
+- **200** → same shape as register.
+- **401** `invalid_credentials`, message "Incorrect email or password" —
+  identical for an unknown email, a wrong password, and an account that has
+  no password (Google-only), so the response never reveals which.
+
+### `POST /api/auth/google`
+Sign in with Google. The frontend obtains a Google **ID token** from Google
+Identity Services and sends it here; the backend verifies it.
+- **Request**: `{ "credential": "<Google ID token>" }`
+- **200** → same shape as register. Creates an account on first use.
+- **401** `invalid_google_token` — not signed by Google, wrong audience
+  (not this app's client id), wrong issuer, expired, email not verified by
+  Google, or the email is already tied to a *different* Google identity.
+- **503** `google_unavailable` — Google sign-in isn't configured
+  (`GOOGLE_CLIENT_ID` unset) or Google's signing keys couldn't be fetched.
+- **Linking**: if an account with the same email already exists and was made
+  with a password, the Google identity is linked to it (its trips are kept)
+  **and its password is removed**. A password registration never proved the
+  address was the registrant's, so keeping it would let someone who
+  pre-registered a victim's email retain access after the real owner arrives.
+
+### `GET /api/auth/me`
+- **200** → `{ "id": 1, "email": "a@b.co" }`; **401** without a valid token.
+  The frontend uses this to check a stored token on load.
 
 ## Trips
 
@@ -256,9 +300,11 @@ for a real day under a valid token.
   trip behind that token. Same body shape as the share-fetch 404 above.
 
 ## Out of scope
-- Authentication/authorization and per-user trip ownership — `GET
-  /api/trips` returning all trips unscoped is a placeholder, not a
-  final design; revisit once an auth model exists.
+- Password reset, email verification, changing email/password, and account
+  deletion.
+- Revoking a login token before it expires (tokens are stateless; logging
+  out only discards the client's copy).
+- Rate limiting / lockout on the login endpoints.
 - Manually revoking a share link without deleting the trip —
   frontend-spec.md's flow only calls for *generating* a link, so no
   `DELETE /api/trips/{trip_id}/share` is specified here.

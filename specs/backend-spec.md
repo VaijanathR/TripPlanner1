@@ -112,9 +112,43 @@ from its Days rather than stored redundantly.
   Exact status codes and response shapes belong in
   `specs/api-contract.md` (not yet written).
 
+## Accounts and access
+
+Configuration is read from the environment only: `JWT_SECRET` (required,
+at least 32 characters, signs login tokens) and `GOOGLE_CLIENT_ID`
+(optional; enables Google sign-in). Endpoint shapes are in
+`specs/api-contract.md` ("Auth").
+
+### Acceptance criteria
+- Every `/api` endpoint except register, login, Google sign-in and the two
+  public share reads rejects a request with no valid login with `401`, before
+  validating its body.
+- A forged, tampered, unsigned, expired, or claim-less login token is
+  rejected, as is a token for a user that no longer exists.
+- A user can only read, change, delete, or create share links for their own
+  trips. Another user's trip, day, or conditions request is answered exactly
+  like a missing one (`404`, identical body). Listing trips returns only the
+  caller's.
+- The same trip's own write endpoint rejects a caller with no login and
+  changes nothing, while its share link stays readable with no login.
+- Passwords are stored only as salted `scrypt` hashes, and are never
+  returned. Registering a duplicate email (any letter case) is `409`; a
+  password shorter than 8 or longer than 128 characters is `422`.
+- A login for an unknown email, a wrong password, and a password-less
+  (Google-only) account are indistinguishable.
+- Google sign-in accepts only an ID token that is RS256-signed by Google,
+  issued for this app's client id, from Google's issuer, unexpired, and whose
+  email Google marked verified. Algorithm-confusion (HS256) tokens are refused.
+- Google sign-in for an email that has a password account links it, keeps its
+  trips, and removes the password; for an email tied to a different Google
+  identity it is refused.
+- The app refuses to start without a sufficiently long `JWT_SECRET`.
+- Trips that existed before accounts were introduced are kept, owned by a
+  placeholder account that nobody can sign in to.
+
 ## Out of scope for this spec
 - Exact endpoint routes, request/response schemas, and status codes —
   covered in `specs/api-contract.md` (not yet written).
-- Authentication/authorization model for Trip ownership (also deferred
-  in frontend-spec.md).
+- Password reset, email verification, token revocation, and rate limiting
+  on login (see api-contract.md "Out of scope").
 - Choice of specific relational database engine.

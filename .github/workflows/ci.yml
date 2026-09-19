@@ -55,6 +55,9 @@ jobs:
       # the literal text "[SENSITIVE]" -- that would get baked into the
       # bundle as the API URL. A shell variable overrides the pulled file.
       VITE_API_URL: ${{ vars.VITE_API_URL }}
+      # Public (it identifies the app to Google, it is not a secret). Optional:
+      # when empty the login page simply omits the Google button.
+      VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
