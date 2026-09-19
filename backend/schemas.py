@@ -239,6 +239,8 @@ class PlaceCandidate(BaseModel):
 
 class PlaceCandidates(BaseModel):
     candidates: list[PlaceCandidate]
+    # Same-named places elsewhere, given only when nothing matched what was typed.
+    alternatives: list[PlaceCandidate] = []
 
 
 class GuidePhoto(BaseModel):

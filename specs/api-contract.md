@@ -267,10 +267,19 @@ and each `GET /api/trips` entry also gains `"cover_image_url": null | "https://.
 ### `GET /api/destinations/search?city=&state=&country=`
 Candidates for what the user typed. `city` is required (2–100 characters);
 `state` and `country` (optional, ≤100) narrow the results.
-- **200** → `{ "candidates": [ { "geoname_id", "city", "state", "country", "country_code", "latitude", "longitude", "population" } ] }`
-  — at most 8, best first: a matching state first, then larger population.
-  `country` narrows *strictly* (name prefix, case-insensitive, or country code):
-  a country with no such city yields `[]`, never the wrong city.
+- **200** → `{ "candidates": [ { "geoname_id", "city", "state", "country", "country_code", "latitude", "longitude", "population" } ], "alternatives": [ ...same shape... ] }`
+  — at most 8 candidates, best first: a matching state first, then larger population.
+  `country` narrows *strictly*, but forgivingly about how it is written: the full
+  name or a prefix of it, either ISO code (`US`, `USA`), and common names
+  (`U.S.A.`, `America`, `UK`, `Great Britain`, `UAE`, `Holland`…). `state` only
+  ranks (it never removes a place) and accepts a US/Canadian abbreviation (`NV`).
+  Matching ignores case, accents, spaces and punctuation, and a run-together
+  city such as `lasvegas` is found (one extra lookup by its first three letters,
+  matched against the full name).
+  If **nothing** matches what was typed, `candidates` is `[]` and `alternatives`
+  lists (at most 5) the places with that city's name in other countries, so the
+  user sees what exists instead of a dead end. `alternatives` is `[]` whenever
+  there are candidates.
 - **422** — `city` missing or out of bounds. **503** `destinations_unavailable` —
   the geocoding service is down.
 

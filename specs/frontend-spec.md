@@ -136,7 +136,8 @@ maps/weather panels as the Editor, but with no edit controls.
   Country, State / region and City inputs; a search needs at least a 2-letter city.
 - Given a search, the UI lists every matching place ("Paris, Texas, United States"
   and "Paris, Île-de-France Region, France") to choose from; when nothing matches it
-  says so; a failed search shows why and can be retried.
+  says so — and, if the same city exists elsewhere, offers those places to choose
+  from ("Did you mean one of these?"); a failed search shows why and can be retried.
 - Given the user chooses a place, the destination is saved and the guide appears;
   if saving fails the reason is shown and the user can choose again.
 - Given a trip has a destination, the header shows it with a "Change destination"

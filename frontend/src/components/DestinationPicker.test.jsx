@@ -110,6 +110,42 @@ describe("DestinationPicker", () => {
     expect(screen.queryByRole("list", { name: "Matching places" })).not.toBeInTheDocument();
   });
 
+  it("offers the same-named places elsewhere when nothing matches the country, instead of a dead end", async () => {
+    destinationsApi.search.mockResolvedValue({ candidates: [], alternatives: paris });
+    const onChoose = vi.fn().mockResolvedValue();
+    render(<DestinationPicker onChoose={onChoose} />);
+    type("Country", "Japan");
+    type("City", "Paris");
+    search();
+
+    expect(await screen.findByText(/No place called “Paris” matches that country or region/)).toBeInTheDocument();
+    expect(screen.queryByText(/No places match\./)).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Matching places" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Paris, Texas, United States" })); // inside "Places with that name elsewhere"
+    await waitFor(() => expect(onChoose).toHaveBeenCalledWith(4717560));
+    expect(screen.getByRole("list", { name: "Places with that name elsewhere" })).toBeInTheDocument();
+  });
+
+  it("does not show alternatives when there are real matches", async () => {
+    destinationsApi.search.mockResolvedValue({ candidates: [paris[0]], alternatives: [paris[1]] });
+    render(<DestinationPicker onChoose={vi.fn()} />);
+    type("City", "Paris");
+    search();
+
+    await screen.findByRole("list", { name: "Matching places" });
+    expect(screen.queryByRole("list", { name: "Places with that name elsewhere" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Texas/ })).not.toBeInTheDocument();
+  });
+
+  it("tolerates an older server that sends no alternatives", async () => {
+    destinationsApi.search.mockResolvedValue({ candidates: [] });
+    render(<DestinationPicker onChoose={vi.fn()} />);
+    type("City", "Atlantis");
+    search();
+
+    expect(await screen.findByText(/No places match\./)).toBeInTheDocument();
+  });
+
   it("shows an error when the search itself fails, and the form still works", async () => {
     destinationsApi.search.mockRejectedValueOnce(new Error("Place search is temporarily unavailable"));
     render(<DestinationPicker onChoose={vi.fn()} />);

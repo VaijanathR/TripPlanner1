@@ -25,6 +25,10 @@ class UpstreamError(Exception):
     """Any failure talking to an upstream API (network, HTTP error, bad body)."""
 
 
+class UpstreamNetworkError(UpstreamError):
+    """The request never got an HTTP answer (timeout, connection reset...). Worth one quick retry."""
+
+
 class UpstreamNotFound(UpstreamError):
     """The upstream answered 404: the thing asked for doesn't exist."""
 
@@ -44,11 +48,14 @@ def _fetch(url: str, params: dict | None, timeout: float) -> httpx.Response:
                 follow_redirects=True,
             )
     except httpx.HTTPError as exc:
-        raise UpstreamError(str(exc)) from exc
+        raise UpstreamNetworkError(str(exc)) from exc
 
 
 def get_json(url: str, params: dict | None = None, timeout: float = 8.0):
-    resp = _fetch(url, params, timeout)
+    try:
+        resp = _fetch(url, params, timeout)
+    except UpstreamNetworkError:
+        resp = _fetch(url, params, timeout)  # a dropped connection is usually momentary
     if resp.status_code in RETRY_STATUSES:
         time.sleep(RETRY_DELAY_SECONDS)
         resp = _fetch(url, params, timeout)

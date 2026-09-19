@@ -96,6 +96,23 @@ def test_a_gateway_error_twice_is_given_up_on(http):
     assert len(calls) == 2  # exactly one retry, not a loop
 
 
+def test_a_dropped_connection_is_retried_once_and_can_recover(http):
+    script, calls = http
+    script.extend([httpx.ConnectTimeout("handshake timed out"), Resp(200, {"recovered": True})])
+
+    assert real_get_json("https://x/y") == {"recovered": True}
+    assert len(calls) == 2
+
+
+def test_a_network_failure_is_retried_only_once(http):
+    script, calls = http
+    script.append(httpx.ConnectTimeout("still down"))
+
+    with pytest.raises(upstream.UpstreamNetworkError):
+        real_get_json("https://x/y")
+    assert len(calls) == 2
+
+
 def test_a_network_failure_is_an_upstream_error(http):
     http[0].append(httpx.ConnectTimeout("slow"))
 

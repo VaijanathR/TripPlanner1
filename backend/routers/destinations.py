@@ -25,10 +25,13 @@ def search_destinations(
     """Places matching what the user typed, for them to pick from ("Paris" is
     France and Texas)."""
     try:
-        places = geocoding.search_places(city, state, country)
+        places, alternatives = geocoding.search_with_alternatives(city, state, country)
     except upstream.UpstreamError:
         raise AppError(503, "destinations_unavailable", "Place search is temporarily unavailable") from None
-    return {"candidates": [asdict(p) for p in places]}
+    return {
+        "candidates": [asdict(p) for p in places],
+        "alternatives": [asdict(p) for p in alternatives],
+    }
 
 
 @router.put("/trips/{trip_id}/destination", response_model=schemas.TripDetail)

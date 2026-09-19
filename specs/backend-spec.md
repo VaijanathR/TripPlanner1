@@ -156,6 +156,11 @@ Wikidata (notable places). Endpoint shapes are in `specs/api-contract.md`
 ### Acceptance criteria
 - Place search returns ranked candidates, narrowed strictly by country and
   boosted by state; input is validated; a geocoder outage is a `503`.
+- Place search is forgiving about how things are typed: country as a name, prefix,
+  ISO code or common alias ("USA", "U.S.A.", "America", "UK"); state as a name or a
+  US/Canadian abbreviation ("NV"); a run-together city ("lasvegas") is found with at
+  most one extra lookup; when nothing matches, the same-named places elsewhere are
+  offered as alternatives (never a silent dead end).
 - A trip's destination is stored from the geocoder's answer for the chosen id —
   never from client-sent names or coordinates — and only the trip's owner can set,
   change, clear or read the guide for it.

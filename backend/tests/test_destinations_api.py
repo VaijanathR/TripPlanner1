@@ -54,7 +54,7 @@ def test_search_can_be_narrowed_by_state_and_country(client, world):
 def test_search_with_no_match_is_an_empty_list_not_an_error(client, world):
     resp = client.get("/api/destinations/search", params={"city": "Atlantis"})
 
-    assert resp.status_code == 200 and resp.json() == {"candidates": []}
+    assert resp.status_code == 200 and resp.json() == {"candidates": [], "alternatives": []}
 
 
 @pytest.mark.parametrize("params", [{}, {"city": ""}, {"city": "P"}, {"city": "x" * 101}, {"city": "Paris", "state": "y" * 101}])
@@ -69,6 +69,31 @@ def test_search_reports_the_service_being_down_as_503(client, monkeypatch):
 
     assert resp.status_code == 503
     assert resp.json()["error"]["code"] == "destinations_unavailable"
+
+
+def test_search_finds_las_vegas_from_usa_lasvegas_nevada_as_typed(client, monkeypatch):
+    """The exact entry that used to say 'no place found'."""
+    lv = geocode_result(5506956, "Las Vegas", "Nevada", "United States", "US", 36.17497, -115.13722, 641_903)
+    nm = geocode_result(5475433, "Las Vegas", "New Mexico", "United States", "US", 35.59, -105.22, 13_000)
+    monkeypatch.setattr(
+        upstream, "get_json",
+        FakeUpstream().on(geocoding.SEARCH_URL, lambda url, params: {"results": [lv, nm]} if params["name"] == "las" else {}),
+    )
+
+    resp = client.get("/api/destinations/search", params={"city": "lasvegas", "state": "nevada", "country": "USA"})
+
+    assert resp.status_code == 200
+    got = resp.json()
+    assert [c["geoname_id"] for c in got["candidates"]] == [5506956, 5475433]  # Nevada first
+    assert got["alternatives"] == []
+
+
+def test_search_offers_the_same_named_places_elsewhere_when_the_country_matches_nothing(client, world):
+    resp = client.get("/api/destinations/search", params={"city": "Paris", "country": "Japan"})
+
+    body = resp.json()
+    assert body["candidates"] == []
+    assert {c["country_code"] for c in body["alternatives"]} == {"FR", "US"}
 
 
 # ------------------------------------------------------------------ set / clear
