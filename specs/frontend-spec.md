@@ -185,6 +185,32 @@ maps/weather panels as the Editor, but with no edit controls.
   same "unavailable" badge in place of the map as the Editor — the
   day's activities still render in full, never a crash.
 
+### Imagery
+
+- Every photograph the app shows comes from a source whose license allows
+  this use (public domain, CC0, or CC BY). Its author, license, and source
+  link are recorded and listed on a public "Photo credits" page, reachable
+  without logging in and linked from every screen. Photos under share-alike
+  licenses are not used.
+- The photos cover four themes: flying, boats, road trips, and nature.
+- The Login screen and the Trip List banner show a travel photo. The Trip
+  List banner shows a different photo from the set on each visit.
+- Given a trip has a destination photo, its card and header use it.
+  Otherwise they use a photo from the set chosen consistently for that trip,
+  so the same trip always shows the same photo.
+- Given the Trip List, a "Travel your way" strip of four tiles (fly, sail,
+  drive, ride the rails) is shown. The tiles are decorative and have no
+  actions.
+- Given a photo can't be loaded, a colored gradient stands in and nothing
+  else on the screen changes. A broken image is never shown.
+- Given text over a photo, it stays readable in both the light and dark
+  themes.
+- Decorative photos have empty alternative text, and destination photos keep
+  their descriptive text.
+- The banner photo is at most 350 KB and every other photo at most 150 KB.
+  Only the banner photo is downloaded up front, and the others load as they
+  come into view.
+
 ## Out of scope for this spec
 - Visual design, styling, and component library choices.
 - Exact request/response shapes — covered in `specs/api-contract.md`
