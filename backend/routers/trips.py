@@ -7,6 +7,7 @@ import schemas
 from auth import current_user
 from database import get_db
 from deps import get_trip_or_404
+from routers.destinations import apply_place, lookup_place
 
 router = APIRouter(prefix="/api/trips", tags=["trips"], dependencies=[Depends(current_user)])
 
@@ -51,10 +52,17 @@ def create_trip(
     db: Session = Depends(get_db),
     user: models.User = Depends(current_user),
 ):
+    # Look the place up first: if it can't be set, no trip is created.
+    place = lookup_place(payload.geoname_id) if payload.geoname_id is not None else None
     trip = models.Trip(name=payload.name, user_id=user.id)
+    if place is not None:
+        apply_place(trip, place)
     db.add(trip)
     db.commit()
     db.refresh(trip)
+    if place is not None:
+        guide.ensure_guide(db, trip.destination)  # start warming the guide now
+        db.refresh(trip)
     return trip
 
 

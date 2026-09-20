@@ -95,6 +95,8 @@ class DaysReorderResponse(BaseModel):
 
 class TripCreate(BaseModel):
     name: str
+    # Optional: create the trip with this destination in one step.
+    geoname_id: int | None = Field(default=None, gt=0)
 
     @field_validator("name")
     @classmethod

@@ -266,9 +266,9 @@ select:focus {
   color: rgba(255, 255, 255, 0.92);
 }
 
-.hero .create-trip-form {
+.hero .create-trip {
   margin-top: 28px;
-  max-width: 560px;
+  max-width: 720px;
 }
 
 .create-trip-form {
@@ -810,9 +810,11 @@ select:focus {
 
 .destination-fields {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0 14px;
 }
+
+.destination-fields input { width: 100%; min-width: 0; box-sizing: border-box; }
 
 .destination-actions {
   display: flex;
@@ -848,6 +850,8 @@ select:focus {
   border-color: var(--primary);
   color: var(--ink);
 }
+
+.candidate svg { flex: none; }
 
 .candidate em { margin-left: auto; color: var(--muted); font-style: normal; font-size: 0.85rem; }
 
@@ -1062,7 +1066,7 @@ select:focus {
 .trip-destination { color: var(--primary) !important; font-weight: 500; }
 
 @media (max-width: 760px) {
-  .destination-fields { grid-template-columns: 1fr; }
+  .destination-fields { grid-template-columns: minmax(0, 1fr); }
   .photo-trio { grid-template-columns: 1fr; }
   .photo-city .photo-frame, .photo-frame { height: 200px; }
 }
@@ -1184,3 +1188,63 @@ select:focus {
 .credit div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .credit span { color: var(--muted); font-size: 0.9rem; overflow-wrap: anywhere; }
 .credit a { color: var(--primary); }
+
+/* ---------- Create trip: name + place ---------- */
+.create-trip {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px;
+  color: var(--text);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.create-trip .create-trip-form {
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.create-trip .create-trip-form input {
+  flex: 1 1 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.create-trip .create-trip-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.create-place h2 { font-size: 1.05rem; margin-bottom: 10px; }
+
+.create-trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.create-trip-actions button {
+  padding: 12px 24px;
+  background: var(--accent);
+  color: #2a0f06;
+}
+
+.create-trip-actions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, #000);
+}
+
+.create-trip-actions .hint { margin: 0; color: var(--muted); }
+
+.candidate.selected {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}

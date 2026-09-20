@@ -202,6 +202,21 @@ From [frontend-spec.md](frontend-spec.md) "Imagery". Photo files and their credi
 | L12 | Banner at most 350 KB, every other photo at most 150 KB | `photos.test.js` › "keeps the banner under 350 KB and every other photo under 150 KB", "has every file it names, and no file it does not name", "has the right size of file for every job it does" | Yes |
 | L13 | Only the banner is downloaded up front; the others load as they come into view | `HeroPhoto.test.jsx` › "loads eagerly and at high priority only when it is the banner"; `TripList.test.jsx` › "downloads only the banner up front; the rest load as they come into view"; `TravelStrip.test.jsx` › "loads each photo only as it comes into view" | Yes |
 
+## M. Creating a trip with its destination
+
+From [frontend-spec.md](frontend-spec.md) "Trip List", [api-contract.md](api-contract.md) `POST /api/trips` and [backend-spec.md](backend-spec.md) "Destinations and guides".
+
+| # | Criterion | Test(s) | Covered |
+|---|---|---|---|
+| M1 | The Create trip form asks for the name and a place (Country, State / region, City), searched and chosen as in the Editor | `TripList.test.jsx` › "asks for the trip name and a place: country, state and city", "lists matching places to pick from, marks the chosen one, and says which place is chosen", "offers same-named places elsewhere when nothing matches, and one of them can be chosen", "says so when no place matches, and can be searched again", "shows why a place search failed and keeps the form usable". The search and list are the one shared component the Editor uses: `DestinationPicker.test.jsx` (unchanged, all still pass) | Yes |
+| M2 | Create trip is available only once a name is entered and a place chosen; changing a place field clears the choice | `TripList.test.jsx` › "cannot create a trip without a name, or without a chosen place", "clears the chosen place when a place field is changed", "can change its mind: choosing another place replaces the first" | Yes |
+| M3 | A successful create gives the trip its destination and opens it (on Discover, since it has no days) | `TripList.test.jsx` › "creates the trip with its chosen destination and opens it"; `api/trips.test.js` › both tests; the Editor's existing "opens on Discover when the trip has no days yet, since there is nothing to edit" | Yes |
+| M4 | A failed create makes no trip, shows the reason, and keeps what was entered | `TripList.test.jsx` › "creates no trip when it fails, shows the reason, and keeps the name and the chosen place", "locks the form while the trip is being created" | Yes |
+| M5 | Editor: a trip with no destination still asks "Where are you going?" | `ItineraryEditor.test.jsx` › "asks where the trip is going when it has no destination, with no tabs yet" | Yes |
+| M6 | `POST /api/trips` with `geoname_id` creates the trip with the destination in one step, takes only the id from the client, and starts the guide | `test_destinations_api.py` › `test_a_trip_can_be_created_with_its_destination_in_one_step`, `test_creating_a_trip_takes_only_the_id_from_the_client`, `test_creating_a_trip_with_a_destination_starts_building_its_guide`, `test_a_trip_created_with_a_destination_belongs_to_its_creator` | Yes |
+| M7 | It is all or nothing: an unknown place (404), a geocoder outage (503) or a bad id (422) creates no trip; a blank name still fails | `test_an_unknown_place_creates_no_trip`, `test_the_geocoder_being_down_creates_no_trip`, `test_a_bad_destination_id_on_create_is_a_validation_error_and_creates_no_trip`, `test_a_missing_name_is_still_refused_when_a_place_is_given` | Yes |
+| M8 | Without `geoname_id` nothing changes | `test_creating_a_trip_without_a_destination_works_as_before` and every existing trip test | Yes |
+
 ## Supporting tests (no criterion of their own)
 
 These back the criteria above indirectly, or pin internal behaviour worth keeping:
@@ -227,6 +242,7 @@ For each key behaviour, the implementation was deliberately broken and the named
 | G | Token never sent; auth-endpoint 401 treated as a dead session; rejected stored token kept; logout leaves the token; network error wipes the session; anonymous visitors see the page; page shown while the session is still loading; short passwords accepted; navigation happens even when login fails; remembered destination ignored; trip list not behind login; share links put behind login | `client.test.js`, `AuthContext.test.jsx`, `RequireAuth.test.jsx`, `Login.test.jsx`, `App.test.jsx` |
 | D14, E | Malformed response not guarded; 404 no longer mapped to "unavailable"; every error shown as "unavailable"; a Delete button added to the Share View; conditions fetched for the wrong day; route removed | the ConditionsPanel and ShareView tests |
 | L | Banner allowed to repeat; every photo loaded eagerly; footer link removed from every screen; a share-alike licence in the manifest; strip photos given descriptive alt text | `photos.test.js`, `HeroPhoto.test.jsx`, `App.test.jsx`, `TravelStrip.test.jsx` |
+| M | Destination looked up after the trip is saved (a failed lookup leaves a trip behind); destination never applied; guide never started; place not required in the form; editing a place field keeps the old choice; place id dropped from the create call; a failed create wipes the form | `test_destinations_api.py`, `TripList.test.jsx` |
 
 One mutant was *equivalent* (the change could not alter behaviour) and was discarded rather than counted as a survivor; it did lead to a real crash on malformed responses being found and fixed. One mutant was first "killed" only because a test fixture crashed, so it was redone until the intended test failed.
 

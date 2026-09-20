@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import TripList, { NOTICE_MS } from "./TripList";
+import { destinationsApi } from "../api/destinations";
 import { tripsApi } from "../api/trips";
 
 vi.mock("../api/trips", () => ({
@@ -12,11 +13,28 @@ vi.mock("../api/trips", () => ({
   },
 }));
 
+vi.mock("../api/destinations", () => ({
+  destinationsApi: { search: vi.fn() },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, useNavigate: () => mockNavigate };
 });
+
+const KYOTO = { geoname_id: 1857910, city: "Kyoto", state: "Kyoto", country: "Japan", country_code: "JP" };
+const PARIS_TX = { geoname_id: 4717560, city: "Paris", state: "Texas", country: "United States", country_code: "US" };
+
+const typeName = (name) => fireEvent.change(screen.getByPlaceholderText("New trip name"), { target: { value: name } });
+const createButton = () => screen.getByRole("button", { name: "Create trip" });
+
+// Fill the place fields, search, and click the matching place.
+async function choosePlace({ city = "Kyoto", label = "Kyoto, Kyoto, Japan" } = {}) {
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: city } });
+  fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+  fireEvent.click(await screen.findByRole("button", { name: new RegExp(label) }));
+}
 
 function renderTripList() {
   return render(
@@ -59,17 +77,179 @@ describe("TripList", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
-  it("navigates to the new trip after a successful create", async () => {
+  it("creates the trip with its chosen destination and opens it", async () => {
     tripsApi.list.mockResolvedValue({ trips: [] });
-    tripsApi.create.mockResolvedValue({ id: 42, name: "New Trip" });
+    destinationsApi.search.mockResolvedValue({ candidates: [KYOTO], alternatives: [] });
+    tripsApi.create.mockResolvedValue({ id: 42, name: "New Trip", destination: KYOTO });
     renderTripList();
 
     await screen.findByText("No trips yet.");
-    fireEvent.change(screen.getByPlaceholderText("New trip name"), { target: { value: "New Trip" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create trip" }));
+    typeName("New Trip");
+    await choosePlace();
+    fireEvent.click(createButton());
 
-    await waitFor(() => expect(tripsApi.create).toHaveBeenCalledWith("New Trip"));
+    await waitFor(() => expect(tripsApi.create).toHaveBeenCalledWith("New Trip", 1857910));
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith("/trips/42"));
+  });
+
+  it("asks for the trip name and a place: country, state and city", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+
+    expect(screen.getByPlaceholderText("New trip name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Country")).toBeInTheDocument();
+    expect(screen.getByLabelText("State / region")).toBeInTheDocument();
+    expect(screen.getByLabelText("City")).toBeInTheDocument();
+  });
+
+  it("cannot create a trip without a name, or without a chosen place", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [KYOTO], alternatives: [] });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    expect(createButton()).toBeDisabled();
+
+    typeName("Only a name");
+    expect(createButton()).toBeDisabled();
+
+    typeName("");
+    await choosePlace();
+    expect(createButton()).toBeDisabled();
+
+    typeName("Both");
+    expect(createButton()).toBeEnabled();
+    expect(tripsApi.create).not.toHaveBeenCalled();
+  });
+
+  it("lists matching places to pick from, marks the chosen one, and says which place is chosen", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [PARIS_TX, KYOTO], alternatives: [] });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Paris" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+    const texas = await screen.findByRole("button", { name: /Paris, Texas, United States/ });
+    expect(screen.getByRole("button", { name: /Kyoto, Kyoto, Japan/ })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(texas);
+
+    expect(texas).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Kyoto, Kyoto, Japan/ })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Destination: Paris, Texas, United States")).toBeInTheDocument();
+  });
+
+  it("clears the chosen place when a place field is changed", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [KYOTO], alternatives: [] });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    typeName("Trip");
+    await choosePlace();
+    expect(createButton()).toBeEnabled();
+
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "Japan" } });
+
+    expect(createButton()).toBeDisabled();
+    expect(screen.queryByText(/^Destination: /)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kyoto, Kyoto, Japan/ })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("can change its mind: choosing another place replaces the first", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [PARIS_TX, KYOTO], alternatives: [] });
+    tripsApi.create.mockResolvedValue({ id: 8, name: "Trip" });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    typeName("Trip");
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Paris" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Paris, Texas/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Kyoto, Kyoto, Japan/ }));
+    fireEvent.click(createButton());
+
+    await waitFor(() => expect(tripsApi.create).toHaveBeenCalledWith("Trip", 1857910));
+  });
+
+  it("offers same-named places elsewhere when nothing matches, and one of them can be chosen", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [], alternatives: [PARIS_TX] });
+    tripsApi.create.mockResolvedValue({ id: 9, name: "Trip" });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    typeName("Trip");
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Paris" } });
+    fireEvent.change(screen.getByLabelText("Country"), { target: { value: "Japan" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+
+    expect(await screen.findByText(/Did you mean one of these\?/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Paris, Texas, United States/ }));
+    fireEvent.click(createButton());
+
+    await waitFor(() => expect(tripsApi.create).toHaveBeenCalledWith("Trip", 4717560));
+  });
+
+  it("says so when no place matches, and can be searched again", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValueOnce({ candidates: [], alternatives: [] });
+    renderTripList();
+    await screen.findByText("No trips yet.");
+
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Atlantis" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+
+    expect(await screen.findByText(/No places match/)).toBeInTheDocument();
+    expect(createButton()).toBeDisabled();
+  });
+
+  it("shows why a place search failed and keeps the form usable", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockRejectedValue(new Error("Place search is temporarily unavailable"));
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    typeName("Trip");
+
+    fireEvent.change(screen.getByLabelText("City"), { target: { value: "Kyoto" } });
+    fireEvent.click(screen.getByRole("button", { name: "Find place" }));
+
+    expect(await screen.findByText(/Place search is temporarily unavailable/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("New trip name")).toHaveValue("Trip");
+    expect(screen.getByRole("button", { name: "Find place" })).toBeEnabled();
+  });
+
+  it("creates no trip when it fails, shows the reason, and keeps the name and the chosen place", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [KYOTO], alternatives: [] });
+    tripsApi.create.mockRejectedValue(new Error("Place lookup is temporarily unavailable"));
+    renderTripList();
+    await screen.findByText("No trips yet.");
+
+    typeName("Dup");
+    await choosePlace();
+    fireEvent.click(createButton());
+
+    expect(await screen.findByText("Place lookup is temporarily unavailable")).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByPlaceholderText("New trip name")).toHaveValue("Dup");
+    expect(screen.getByLabelText("City")).toHaveValue("Kyoto");
+    expect(screen.getByText("Destination: Kyoto, Kyoto, Japan")).toBeInTheDocument();
+    expect(createButton()).toBeEnabled();
+    expect(tripsApi.list).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks the form while the trip is being created", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    destinationsApi.search.mockResolvedValue({ candidates: [KYOTO], alternatives: [] });
+    tripsApi.create.mockReturnValue(new Promise(() => {}));
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    typeName("Slow");
+    await choosePlace();
+    fireEvent.click(createButton());
+
+    expect(await screen.findByRole("button", { name: "Creating…" })).toBeDisabled();
+    expect(screen.getByLabelText("City")).toBeDisabled();
+    expect(screen.getByPlaceholderText("New trip name")).toBeDisabled();
   });
 
   it("removes a trip card after a successful delete", async () => {
@@ -196,20 +376,6 @@ describe("TripList", () => {
     expect(within(lisbonCard).getByRole("button", { name: "Delete" })).toBeEnabled();
     expect(within(kyotoCard).getByRole("button", { name: "Delete" })).toBeEnabled();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-  });
-
-  it("shows an inline error and stays on the list when creating a trip fails", async () => {
-    tripsApi.list.mockResolvedValue({ trips: [] });
-    tripsApi.create.mockRejectedValue(new Error("name already taken"));
-    renderTripList();
-    await screen.findByText("No trips yet.");
-
-    fireEvent.change(screen.getByPlaceholderText("New trip name"), { target: { value: "Dup" } });
-    fireEvent.click(screen.getByRole("button", { name: "Create trip" }));
-
-    expect(await screen.findByText("name already taken")).toBeInTheDocument();
-    expect(mockNavigate).not.toHaveBeenCalled();
-    expect(screen.getByPlaceholderText("New trip name")).toHaveValue("Dup");
   });
 
   it("shows where each trip is going, and only for trips that have a destination", async () => {

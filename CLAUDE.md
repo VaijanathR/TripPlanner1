@@ -63,6 +63,7 @@ A trip can have a destination (country / state / city, picked from geocoder cand
 - Tests never touch the network: `tests/conftest.py` makes any un-faked upstream call fail like an outage and runs the "background" build inline; canned responses live in `tests/fakes.py`.
 - Wikidata class ids in `guide.TYPE_THEME` were checked against their labels; add a type by adding its QID to that map (and verify the label).
 - Photos are credited (links to the Commons file page / Wikipedia). Guide data is Wikipedia-only English.
+- A trip is created with its destination from the Trip List: `POST /api/trips` takes an optional `geoname_id` (looked up first, so a failed lookup creates no trip). The Create trip form and the Editor's picker share `components/PlaceSearch.jsx`.
 - Frontend: `hooks/useGuide.js` (polling), `components/DestinationPicker.jsx`, `DestinationGuide.jsx`, `PlaceCard.jsx`, `Photo.jsx` (gradient fallback for broken images). "Add to itinerary" refuses days with unsaved edits (`DayEditor` reports dirtiness via `onDirtyChange`).
 - Dev: the repo is on `/mnt/d`, where Vite's file watcher doesn't see edits — restart the dev server after changes (details in memory).
 

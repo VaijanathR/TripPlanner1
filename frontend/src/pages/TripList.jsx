@@ -5,8 +5,10 @@ import { CalendarIcon, PinIcon, TrashIcon } from "../components/Icons";
 import { EmptyTrips } from "../components/Illustrations";
 import HeroPhoto from "../components/HeroPhoto";
 import Photo from "../components/Photo";
+import PlaceSearch from "../components/PlaceSearch";
 import TravelStrip from "../components/TravelStrip";
 import { pickBanner, tripCardPhoto } from "../photos/photos";
+import { describePlace } from "../utils/place";
 
 // How long the "trip deleted" confirmation stays visible.
 export const NOTICE_MS = 3000;
@@ -21,6 +23,7 @@ export default function TripList() {
   const [trips, setTrips] = useState(null);
   const [error, setError] = useState(null);
   const [newName, setNewName] = useState("");
+  const [newPlace, setNewPlace] = useState(null); // the place chosen for the new trip
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [deleteErrors, setDeleteErrors] = useState({});
@@ -49,11 +52,11 @@ export default function TripList() {
 
   async function handleCreate(e) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newName.trim() || !newPlace) return;
     setCreating(true);
     setCreateError(null);
     try {
-      const trip = await tripsApi.create(newName.trim());
+      const trip = await tripsApi.create(newName.trim(), newPlace.geoname_id);
       navigate(`/trips/${trip.id}`);
     } catch (err) {
       setCreateError(err.message);
@@ -88,20 +91,40 @@ export default function TripList() {
           Plan every day, discover what is worth seeing, and share your itinerary with a link.
         </p>
 
-      <form className="create-trip-form" onSubmit={handleCreate}>
-        <input
-          ref={nameInputRef}
-          type="text"
-          placeholder="New trip name"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          disabled={creating}
-        />
-        <button type="submit" disabled={creating || !newName.trim()}>
-          {creating ? "Creating…" : "Create trip"}
-        </button>
-        {createError && <p className="inline-error">{createError}</p>}
-      </form>
+      <div className="create-trip">
+        <form id="create-trip-form" className="create-trip-form" onSubmit={handleCreate}>
+          <input
+            ref={nameInputRef}
+            type="text"
+            aria-label="Trip name"
+            placeholder="New trip name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            disabled={creating}
+          />
+        </form>
+
+        <div className="create-place">
+          <h2>Where are you going?</h2>
+          <PlaceSearch
+            findLabel="Find place"
+            selectedId={newPlace?.geoname_id ?? null}
+            locked={creating}
+            onPick={setNewPlace}
+            onEdit={() => setNewPlace(null)}
+          />
+        </div>
+
+        <div className="create-trip-actions">
+          <button type="submit" form="create-trip-form" disabled={creating || !newName.trim() || !newPlace}>
+            {creating ? "Creating…" : "Create trip"}
+          </button>
+          <p className="hint">
+            {newPlace ? `Destination: ${describePlace(newPlace)}` : "Enter a name and choose a place to create your trip."}
+          </p>
+        </div>
+        {createError && <p className="inline-error" role="alert">{createError}</p>}
+      </div>
       </div>
     </header>
 

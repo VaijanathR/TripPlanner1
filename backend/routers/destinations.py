@@ -34,6 +34,26 @@ def search_destinations(
     }
 
 
+def lookup_place(geoname_id: int) -> geocoding.Place:
+    """The geocoder's own answer for an id (404 if it doesn't exist, 503 if the
+    geocoder is down). Only ids are taken from the client, never names or
+    coordinates."""
+    try:
+        place = geocoding.get_place(geoname_id)
+    except upstream.UpstreamError:
+        raise AppError(503, "destinations_unavailable", "Place lookup is temporarily unavailable") from None
+    if place is None:
+        raise AppError(404, "place_not_found", "That place doesn't exist")
+    return place
+
+
+def apply_place(trip: models.Trip, place: geocoding.Place) -> None:
+    trip.geoname_id = place.geoname_id
+    trip.city, trip.state = place.city, place.state
+    trip.country, trip.country_code = place.country, place.country_code
+    trip.latitude, trip.longitude = place.latitude, place.longitude
+
+
 @router.put("/trips/{trip_id}/destination", response_model=schemas.TripDetail)
 def set_destination(
     trip_id: int,
@@ -42,19 +62,8 @@ def set_destination(
     user: models.User = Depends(current_user),
 ):
     trip = get_trip_or_404(db, trip_id, user)
-    try:
-        place = geocoding.get_place(payload.geoname_id)
-    except upstream.UpstreamError:
-        raise AppError(503, "destinations_unavailable", "Place lookup is temporarily unavailable") from None
-    if place is None:
-        raise AppError(404, "place_not_found", "That place doesn't exist")
-
-    # Only ids that came back from the geocoder are stored, never client-sent
-    # names or coordinates.
-    trip.geoname_id = place.geoname_id
-    trip.city, trip.state = place.city, place.state
-    trip.country, trip.country_code = place.country, place.country_code
-    trip.latitude, trip.longitude = place.latitude, place.longitude
+    place = lookup_place(payload.geoname_id)
+    apply_place(trip, place)
     db.commit()
     db.refresh(trip)
     guide.ensure_guide(db, trip.destination)  # start warming the guide now

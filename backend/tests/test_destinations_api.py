@@ -293,3 +293,77 @@ def test_a_shared_trip_shows_its_destination_but_never_the_share_token(client, a
 
     assert shared["destination"]["city"] == "Kyoto"
     assert "share_token" not in shared
+
+
+# ------------------------------------------------- creating a trip with a place
+
+
+def test_a_trip_can_be_created_with_its_destination_in_one_step(client, world):
+    resp = client.post("/api/trips", json={"name": "Kyoto in Autumn", "geoname_id": 1857910})
+
+    assert resp.status_code == 201
+    assert resp.json()["name"] == "Kyoto in Autumn" and resp.json()["days"] == []
+    assert resp.json()["destination"] == {
+        "geoname_id": 1857910, "city": "Kyoto", "state": "Kyoto", "country": "Japan",
+        "country_code": "JP", "latitude": 35.02107, "longitude": 135.75385,
+    }
+    assert client.get(f"/api/trips/{resp.json()['id']}").json()["destination"]["city"] == "Kyoto"
+
+
+def test_creating_a_trip_with_a_destination_starts_building_its_guide(client, world):
+    client.post("/api/trips", json={"name": "Kyoto", "geoname_id": 1857910})
+
+    assert world.calls_to(guide.WIKIDATA_SPARQL)
+
+
+def test_creating_a_trip_takes_only_the_id_from_the_client(client, world):
+    resp = client.post(
+        "/api/trips",
+        json={"name": "Kyoto", "geoname_id": 1857910, "city": "Atlantis", "latitude": 0, "country": "Nowhere"},
+    )
+
+    assert resp.json()["destination"]["city"] == "Kyoto" and resp.json()["destination"]["latitude"] == 35.02107
+
+
+def test_creating_a_trip_without_a_destination_works_as_before(client, world):
+    resp = client.post("/api/trips", json={"name": "Undecided"})
+
+    assert resp.status_code == 201 and resp.json()["destination"] is None
+
+
+def test_an_unknown_place_creates_no_trip(client, world):
+    resp = client.post("/api/trips", json={"name": "Nowhere", "geoname_id": 99})
+
+    assert resp.status_code == 404 and resp.json()["error"]["code"] == "place_not_found"
+    assert client.get("/api/trips").json() == {"trips": []}
+
+
+def test_the_geocoder_being_down_creates_no_trip(client, world):
+    world.on(geocoding.GET_URL, upstream.UpstreamError("down"))
+
+    resp = client.post("/api/trips", json={"name": "Kyoto", "geoname_id": 1857910})
+
+    assert resp.status_code == 503 and resp.json()["error"]["code"] == "destinations_unavailable"
+    assert client.get("/api/trips").json() == {"trips": []}
+
+
+@pytest.mark.parametrize("geoname_id", [0, -5, "abc"])
+def test_a_bad_destination_id_on_create_is_a_validation_error_and_creates_no_trip(client, world, geoname_id):
+    resp = client.post("/api/trips", json={"name": "Kyoto", "geoname_id": geoname_id})
+
+    assert resp.status_code == 422
+    assert client.get("/api/trips").json() == {"trips": []}
+
+
+def test_a_missing_name_is_still_refused_when_a_place_is_given(client, world):
+    resp = client.post("/api/trips", json={"name": "  ", "geoname_id": 1857910})
+
+    assert resp.status_code == 422 and resp.json()["error"]["fields"]["name"]
+    assert client.get("/api/trips").json() == {"trips": []}
+
+
+def test_a_trip_created_with_a_destination_belongs_to_its_creator(client, other_client, world):
+    trip = client.post("/api/trips", json={"name": "Kyoto", "geoname_id": 1857910}).json()
+
+    assert other_client.get(f"/api/trips/{trip['id']}").status_code == 404
+    assert other_client.get("/api/trips").json() == {"trips": []}
