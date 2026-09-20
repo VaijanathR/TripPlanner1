@@ -192,7 +192,8 @@ def get_place(geoname_id: int) -> Place | None:
     """The one place with this id, or None if it doesn't exist."""
     try:
         raw = upstream.get_json(GET_URL, {"id": geoname_id, "language": "en", "format": "json"})
-    except upstream.UpstreamNotFound:
+    except (upstream.UpstreamNotFound, upstream.UpstreamBadRequest):
+        # Open-Meteo answers 400, not 404, for an id that doesn't exist.
         return None
     if not raw or "id" not in raw:
         return None

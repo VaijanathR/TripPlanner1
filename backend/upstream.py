@@ -33,6 +33,11 @@ class UpstreamNotFound(UpstreamError):
     """The upstream answered 404: the thing asked for doesn't exist."""
 
 
+class UpstreamBadRequest(UpstreamError):
+    """The upstream answered 400: it refused what we asked. Open-Meteo's `get` does
+    this for an id that doesn't exist."""
+
+
 class UpstreamRateLimited(UpstreamError):
     """The upstream answered 429."""
 
@@ -63,6 +68,8 @@ def get_json(url: str, params: dict | None = None, timeout: float = 8.0):
         raise UpstreamNotFound(url)
     if resp.status_code == 429:
         raise UpstreamRateLimited(url)
+    if resp.status_code == 400:
+        raise UpstreamBadRequest(f"HTTP 400 from {url}")
     if resp.status_code >= 400:
         raise UpstreamError(f"HTTP {resp.status_code} from {url}")
     try:

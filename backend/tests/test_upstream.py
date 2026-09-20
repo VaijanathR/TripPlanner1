@@ -60,6 +60,16 @@ def test_a_404_is_reported_as_not_found(http):
         real_get_json("https://x/y")
 
 
+def test_a_400_is_reported_as_a_bad_request_and_is_still_an_upstream_error(http):
+    script, calls = http
+    script.append(Resp(400))
+
+    with pytest.raises(upstream.UpstreamBadRequest) as caught:
+        real_get_json("https://x/y")
+    assert isinstance(caught.value, upstream.UpstreamError)  # callers that degrade on any failure still do
+    assert len(calls) == 1
+
+
 def test_a_429_is_reported_as_rate_limited_and_is_not_retried(http):
     script, calls = http
     script.append(Resp(429))

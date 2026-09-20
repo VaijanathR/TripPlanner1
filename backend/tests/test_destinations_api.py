@@ -367,3 +367,16 @@ def test_a_trip_created_with_a_destination_belongs_to_its_creator(client, other_
 
     assert other_client.get(f"/api/trips/{trip['id']}").status_code == 404
     assert other_client.get("/api/trips").json() == {"trips": []}
+
+
+def test_an_id_the_geocoder_rejects_with_a_400_is_place_not_found_not_an_outage(client, world):
+    # Real Open-Meteo answers 400, not 404, for an id that doesn't exist.
+    world.on(geocoding.GET_URL, upstream.UpstreamBadRequest("HTTP 400"))
+    trip = make_trip(client)
+
+    put = client.put(f"/api/trips/{trip['id']}/destination", json={"geoname_id": 999999999})
+    post = client.post("/api/trips", json={"name": "Nowhere", "geoname_id": 999999999})
+
+    assert put.status_code == post.status_code == 404
+    assert put.json()["error"]["code"] == post.json()["error"]["code"] == "place_not_found"
+    assert [t["name"] for t in client.get("/api/trips").json()["trips"]] == ["Kyoto trip"]

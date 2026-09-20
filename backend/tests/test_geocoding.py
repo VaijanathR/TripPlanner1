@@ -93,6 +93,20 @@ def test_get_place_is_none_for_an_unknown_id(monkeypatch):
     assert geocoding.get_place(999) is None
 
 
+def test_get_place_is_none_when_the_geocoder_answers_400_for_an_unknown_id(monkeypatch):
+    # The real Open-Meteo answers HTTP 400 (not 404) for an id that doesn't exist.
+    monkeypatch.setattr(upstream, "get_json", FakeUpstream().on(geocoding.GET_URL, upstream.UpstreamBadRequest("HTTP 400")))
+
+    assert geocoding.get_place(999999999) is None
+
+
+def test_get_place_still_raises_when_the_geocoder_is_really_down(monkeypatch):
+    monkeypatch.setattr(upstream, "get_json", FakeUpstream().on(geocoding.GET_URL, upstream.UpstreamError("HTTP 500")))
+
+    with pytest.raises(upstream.UpstreamError):
+        geocoding.get_place(2)
+
+
 def test_get_place_is_none_when_the_answer_has_no_place(monkeypatch):
     monkeypatch.setattr(upstream, "get_json", FakeUpstream().on(geocoding.GET_URL, {"error": True}))
 
