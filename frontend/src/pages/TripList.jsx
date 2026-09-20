@@ -2,11 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { tripsApi } from "../api/trips";
 import { CalendarIcon, PinIcon, TrashIcon } from "../components/Icons";
-import { EmptyTrips, HeroScene } from "../components/Illustrations";
-import { coverGradient } from "../utils/cover";
+import { EmptyTrips } from "../components/Illustrations";
+import HeroPhoto from "../components/HeroPhoto";
+import Photo from "../components/Photo";
+import TravelStrip from "../components/TravelStrip";
+import { pickBanner, tripCardPhoto } from "../photos/photos";
 
 // How long the "trip deleted" confirmation stays visible.
 export const NOTICE_MS = 3000;
+
+function tripPhotoAlt(trip) {
+  const place = trip.destination ? [trip.destination.city, trip.destination.country].filter(Boolean).join(", ") : "";
+  return place ? `Photo of ${place}` : `Photo for ${trip.name}`;
+}
 
 export default function TripList() {
   const navigate = useNavigate();
@@ -19,6 +27,8 @@ export default function TripList() {
   const [deletingId, setDeletingId] = useState(null);
   const [notice, setNotice] = useState(null);
   const nameInputRef = useRef(null);
+  // Chosen once per visit, so the banner is different next time.
+  const [banner] = useState(() => pickBanner());
 
   function load() {
     setError(null);
@@ -70,7 +80,7 @@ export default function TripList() {
   return (
     <>
     <header className="hero">
-      <HeroScene className="hero-art" />
+      <HeroPhoto src={banner.url} eager />
       <div className="hero-inner">
         <p className="eyebrow">Trip Planner</p>
         <h1>Where to next?</h1>
@@ -133,18 +143,17 @@ export default function TripList() {
           {trips.map((trip) => (
             <li key={trip.id} className="trip-card">
               <Link to={`/trips/${trip.id}`}>
-                <div
+                <Photo
                   className="trip-cover"
-                  style={{
-                    // The gradient sits under the photo, so a slow or missing
-                    // image still leaves a finished-looking card.
-                    backgroundImage: trip.cover_image_url
-                      ? `url("${trip.cover_image_url}"), ${coverGradient(trip.name)}`
-                      : coverGradient(trip.name),
-                  }}
+                  // The destination photo when the trip has one, otherwise one of the
+                  // set photos (the same one every time for the same trip). If the
+                  // image cannot load, a gradient stands in.
+                  src={trip.cover_image_url ?? tripCardPhoto(trip.id).url}
+                  alt={trip.cover_image_url ? tripPhotoAlt(trip) : ""}
+                  seed={trip.name}
                 >
                   <PinIcon />
-                </div>
+                </Photo>
                 <div className="trip-card-body">
                   <strong>{trip.name}</strong>
                   {trip.destination && (
@@ -177,6 +186,8 @@ export default function TripList() {
           ))}
         </ul>
       )}
+
+      <TravelStrip />
     </div>
     </>
   );

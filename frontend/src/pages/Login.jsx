@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Brand from "../components/Brand";
 import GoogleSignInButton from "../components/GoogleSignInButton";
-import { HeroScene } from "../components/Illustrations";
+import HeroPhoto from "../components/HeroPhoto";
+import { loginPhoto } from "../photos/photos";
 import { useAuth } from "../auth/useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -59,7 +60,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <aside className="auth-hero">
-        <HeroScene className="hero-art" />
+        <HeroPhoto src={loginPhoto().url} />
         <Brand />
         <h2>Plan the trip. Share the adventure.</h2>
         <p>Build a day-by-day itinerary, see what the weather is doing, and send friends a link.</p>

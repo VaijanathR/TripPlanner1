@@ -238,3 +238,17 @@ describe("Login: Google", () => {
   });
 });
 
+describe("Login: imagery", () => {
+  it("shows a decorative travel photo on the welcome panel, with a fallback if it cannot load", () => {
+    renderLogin();
+
+    const img = document.querySelector(".auth-hero img.hero-photo");
+    expect(img.getAttribute("src")).toMatch(/\/photos\/.+-panel\.jpg$/);
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("loading", "lazy");
+
+    fireEvent.error(img);
+    expect(document.querySelector(".auth-hero img")).toBeNull();
+    expect(screen.getByText("Plan the trip. Share the adventure.")).toBeInTheDocument();
+  });
+});

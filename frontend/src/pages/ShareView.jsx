@@ -4,7 +4,8 @@ import { sharingApi } from "../api/sharing";
 import Brand from "../components/Brand";
 import ConditionsPanel from "../components/ConditionsPanel";
 import { PinIcon } from "../components/Icons";
-import { HeroScene } from "../components/Illustrations";
+import HeroPhoto from "../components/HeroPhoto";
+import { tripHeaderPhoto } from "../photos/photos";
 
 // HH:MM:SS from the API -> HH:MM for display.
 const shortTime = (t) => (t ?? "").slice(0, 5);
@@ -85,7 +86,7 @@ export default function ShareView() {
         <Brand />
       </div>
       <header className="trip-hero">
-        <HeroScene className="hero-art" />
+        <HeroPhoto src={tripHeaderPhoto(trip.id).url} />
         <div className="hero-inner">
           <p className="eyebrow">Shared itinerary</p>
           <h1>{trip.name}</h1>

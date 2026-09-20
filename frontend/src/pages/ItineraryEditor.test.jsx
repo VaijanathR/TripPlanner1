@@ -345,7 +345,7 @@ describe("ItineraryEditor: choosing a destination", () => {
     expect(screen.getByRole("tab", { name: "Discover Osaka" })).toBeInTheDocument();
   });
 
-  it("uses the city's photo as the header image once the guide has it", async () => {
+  it("uses the city's photo as the header image once the guide has it, with descriptive text", async () => {
     tripsApi.get.mockResolvedValue(tripTo());
     renderEditor();
     await screen.findByText("Kyoto, Kyoto, Japan");
@@ -353,17 +353,47 @@ describe("ItineraryEditor: choosing a destination", () => {
     await waitFor(() => {
       const hero = document.querySelector(".trip-hero");
       expect(hero.classList.contains("has-photo")).toBe(true);
-      expect(hero.style.backgroundImage).toContain("https://img/kyoto.jpg");
+      const img = hero.querySelector("img.hero-photo");
+      expect(img).toHaveAttribute("src", "https://img/kyoto.jpg");
+      expect(img.getAttribute("alt")).toMatch(/Kyoto/);
     });
   });
 
-  it("keeps the illustrated header when there is no photo", async () => {
+  it("uses a set photo, decorative and lazy, when there is no destination photo", async () => {
     tripsApi.get.mockResolvedValue(tripTo());
     destinationsApi.guide.mockResolvedValue(guideOf({ photos: { city: null, state: null, country: null } }));
     renderEditor();
     await screen.findByText("Kyoto, Kyoto, Japan");
 
-    expect(document.querySelector(".trip-hero").classList.contains("has-photo")).toBe(false);
+    const hero = document.querySelector(".trip-hero");
+    expect(hero.classList.contains("has-photo")).toBe(false);
+    const img = hero.querySelector("img.hero-photo");
+    expect(img.getAttribute("src")).toMatch(/\/photos\/.+-header\.jpg$/);
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("loading", "lazy");
+  });
+
+  it("gives the same trip the same set photo every time", async () => {
+    tripsApi.get.mockResolvedValue({ id: 1, name: "Kyoto in Autumn", days: [] });
+    const first = renderEditor();
+    await screen.findByText("Kyoto in Autumn");
+    const before = document.querySelector(".trip-hero img.hero-photo").getAttribute("src");
+    first.unmount();
+
+    renderEditor();
+    await screen.findByText("Kyoto in Autumn");
+    expect(document.querySelector(".trip-hero img.hero-photo").getAttribute("src")).toBe(before);
+  });
+
+  it("leaves the gradient, not a broken image, when the header photo cannot load", async () => {
+    tripsApi.get.mockResolvedValue({ id: 1, name: "Kyoto in Autumn", days: [] });
+    renderEditor();
+    await screen.findByText("Kyoto in Autumn");
+
+    fireEvent.error(document.querySelector(".trip-hero img.hero-photo"));
+
+    expect(document.querySelector(".trip-hero img")).toBeNull();
+    expect(screen.getByText("Kyoto in Autumn")).toBeInTheDocument();
   });
 });
 

@@ -28,6 +28,7 @@ function renderTripList() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
 });
 
 describe("TripList", () => {
@@ -226,19 +227,97 @@ describe("TripList", () => {
     expect(within(undecided).queryByText(/Japan/)).not.toBeInTheDocument();
   });
 
-  it("uses the destination photo as the trip's cover, over a gradient so a slow photo never leaves a blank card", async () => {
+  const trip = (id, name, cover = null, destination = null) => ({
+    id, name, start_date: null, end_date: null, day_count: 0, cover_image_url: cover, destination,
+  });
+  const coverOf = (name) => screen.getByText(name).closest("li").querySelector(".trip-cover");
+
+  it("uses the destination photo as the trip's cover, with descriptive text", async () => {
     tripsApi.list.mockResolvedValue({
-      trips: [
-        { id: 1, name: "With photo", start_date: null, end_date: null, day_count: 0, cover_image_url: "https://img/kyoto.jpg" },
-        { id: 2, name: "Without photo", start_date: null, end_date: null, day_count: 0, cover_image_url: null },
-      ],
+      trips: [trip(1, "With photo", "https://img/kyoto.jpg", { city: "Kyoto", country: "Japan" })],
     });
     renderTripList();
 
-    const withPhoto = (await screen.findByText("With photo")).closest("li").querySelector(".trip-cover");
-    const without = screen.getByText("Without photo").closest("li").querySelector(".trip-cover");
-    expect(withPhoto.style.backgroundImage).toMatch(/url\("?https:\/\/img\/kyoto\.jpg"?\).*linear-gradient/);
-    expect(without.style.backgroundImage).toContain("linear-gradient");
-    expect(without.style.backgroundImage).not.toContain("url(");
+    await screen.findByText("With photo");
+    const img = coverOf("With photo").querySelector("img");
+    expect(img).toHaveAttribute("src", "https://img/kyoto.jpg");
+    expect(img).toHaveAttribute("alt", "Photo of Kyoto, Japan");
+    expect(img).toHaveAttribute("loading", "lazy");
+  });
+
+  it("gives a trip without a destination photo one of the set photos, decorative and lazy", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [trip(2, "Without photo")] });
+    renderTripList();
+
+    await screen.findByText("Without photo");
+    const img = coverOf("Without photo").querySelector("img");
+    expect(img.getAttribute("src")).toMatch(/\/photos\/.+-card\.jpg$/);
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("loading", "lazy");
+  });
+
+  it("gives the same trip the same set photo on every visit", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [trip(7, "Steady trip")] });
+    const first = renderTripList();
+    await screen.findByText("Steady trip");
+    const before = coverOf("Steady trip").querySelector("img").getAttribute("src");
+    first.unmount();
+
+    renderTripList();
+    await screen.findByText("Steady trip");
+    expect(coverOf("Steady trip").querySelector("img").getAttribute("src")).toBe(before);
+  });
+
+  it("stands a gradient in for a cover photo that cannot load", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [trip(3, "Broken photo", "https://img/gone.jpg")] });
+    renderTripList();
+
+    await screen.findByText("Broken photo");
+    fireEvent.error(coverOf("Broken photo").querySelector("img"));
+
+    expect(coverOf("Broken photo").querySelector("img")).toBeNull();
+    expect(coverOf("Broken photo").style.backgroundImage).toContain("linear-gradient");
+  });
+
+  it("shows a travel photo banner, and a different one on the next visit", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    const bannerSrc = () => document.querySelector(".hero img.hero-photo").getAttribute("src");
+
+    const first = renderTripList();
+    await screen.findByText("No trips yet.");
+    const one = bannerSrc();
+    expect(one).toMatch(/-wide\.jpg$/);
+    first.unmount();
+
+    renderTripList();
+    await screen.findByText("No trips yet.");
+    expect(bannerSrc()).not.toBe(one);
+  });
+
+  it("downloads only the banner up front; the rest load as they come into view", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [trip(1, "A"), trip(2, "B", "https://img/b.jpg")] });
+    renderTripList();
+    await screen.findByText("A");
+
+    const images = [...document.querySelectorAll("img")];
+    const eager = images.filter((img) => img.getAttribute("loading") !== "lazy");
+    expect(eager).toHaveLength(1);
+    expect(eager[0]).toHaveClass("hero-photo");
+    expect(eager[0]).toHaveAttribute("fetchpriority", "high");
+  });
+
+  it("shows the Travel your way strip below the trips, and below the empty state", async () => {
+    tripsApi.list.mockResolvedValue({ trips: [trip(1, "First trip")] });
+    const withTrips = renderTripList();
+    await screen.findByText("First trip");
+    let strip = screen.getByRole("heading", { name: "Travel your way" });
+    expect(coverOf("First trip").compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    withTrips.unmount();
+
+    tripsApi.list.mockResolvedValue({ trips: [] });
+    renderTripList();
+    const empty = await screen.findByText("No trips yet.");
+    strip = screen.getByRole("heading", { name: "Travel your way" });
+    expect(empty.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

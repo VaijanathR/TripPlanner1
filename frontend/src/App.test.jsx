@@ -102,11 +102,63 @@ describe("App: who can reach what", () => {
     expect(screen.queryByRole("tab", { name: "Log in" })).not.toBeInTheDocument();
   });
 
+  it("lets anyone open the photo credits without logging in", async () => {
+    renderApp("/credits");
+
+    expect(await screen.findByRole("heading", { name: "Photo credits" })).toBeInTheDocument();
+    expect(authApi.me).not.toHaveBeenCalled();
+  });
+
   it("lets anyone open a share link without logging in", async () => {
     renderApp("/share/tok-1");
 
     expect(await screen.findByText("Shared Kyoto trip")).toBeInTheDocument();
     expect(authApi.me).not.toHaveBeenCalled();
     await waitFor(() => expect(sharingApi.read).toHaveBeenCalledWith("tok-1"));
+  });
+});
+
+describe("App: Photo credits link on every screen", () => {
+  const link = () => screen.getByRole("link", { name: "Photo credits" });
+
+  it("is on the login page", async () => {
+    renderApp("/login");
+    await screen.findByRole("tab", { name: "Log in" });
+    expect(link()).toHaveAttribute("href", "/credits");
+  });
+
+  it("is on the trip list", async () => {
+    tokenStore.set("stored");
+    authApi.me.mockResolvedValue(alice);
+    renderApp("/");
+    await screen.findByText("No trips yet.");
+    expect(link()).toHaveAttribute("href", "/credits");
+  });
+
+  it("is on a trip", async () => {
+    tokenStore.set("stored");
+    authApi.me.mockResolvedValue(alice);
+    renderApp("/trips/5");
+    await screen.findByText("Kyoto in Autumn");
+    expect(link()).toHaveAttribute("href", "/credits");
+  });
+
+  it("is on a shared trip", async () => {
+    renderApp("/share/tok-1");
+    await screen.findByText("Shared Kyoto trip");
+    expect(link()).toHaveAttribute("href", "/credits");
+  });
+
+  it("is on the credits page itself", async () => {
+    renderApp("/credits");
+    await screen.findByRole("heading", { name: "Photo credits" });
+    expect(link()).toHaveAttribute("href", "/credits");
+  });
+
+  it("opens the credits from the login page", async () => {
+    renderApp("/login");
+    await screen.findByRole("tab", { name: "Log in" });
+    fireEvent.click(link());
+    expect(await screen.findByRole("heading", { name: "Photo credits" })).toBeInTheDocument();
   });
 });

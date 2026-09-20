@@ -26,6 +26,8 @@
   --hero-from: #0a5468;
   --hero-via: #0e7c86;
   --hero-to: #ff9468;
+  --scrim-soft: rgba(6, 30, 42, 0.38);
+  --scrim-strong: rgba(6, 30, 42, 0.78);
 
   --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: 'Fraunces', Georgia, 'Times New Roman', serif;
@@ -66,6 +68,8 @@
     --hero-from: #06343f;
     --hero-via: #0b5a66;
     --hero-to: #c65f45;
+    --scrim-soft: rgba(3, 14, 20, 0.52);
+    --scrim-strong: rgba(3, 14, 20, 0.86);
   }
 }
 

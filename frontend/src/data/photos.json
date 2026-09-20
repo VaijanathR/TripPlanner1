@@ -1,0 +1,209 @@
+{
+  "photos": {
+    "F3": {
+      "title": "A wing tip of an airplane",
+      "author": "U.S. Department of Agriculture",
+      "license": "Public domain",
+      "licenseUrl": "",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:A_wing_tip_of_an_airplane_(40118125441).jpg",
+      "theme": "flight",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "wide": "wing-clouds-wide.jpg"
+      }
+    },
+    "B7": {
+      "title": "Sailboat on water at sunset",
+      "author": "Johannes Plenio",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sailboat_on_water_at_sunset.jpg",
+      "theme": "boat",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "wide": "sailboat-sunset-wide.jpg"
+      }
+    },
+    "R6": {
+      "title": "Atlanterhavsvegen (Atlantic Road), Utheim, Møre og Romsdal, Norway",
+      "author": "Martin Schmitt",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atlanterhavsvegen_Atlantic_Road_Utheim_M%C3%B8re_og_Rosmdal_NORWAY_2022-07-28_Drone_photo_by_Martin_Schmitt_Flickr_Some_rights_reserved_53357738739_79353e3dae_o.jpg",
+      "theme": "road",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "wide": "atlantic-road-wide.jpg"
+      }
+    },
+    "N3": {
+      "title": "Lake Kinney mit Mount Whitehorn",
+      "author": "Florian Fuchs",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lake_Kinney_mit_Mount_Whitehorn.jpg",
+      "theme": "nature",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "wide": "mountain-lake-wide.jpg"
+      }
+    },
+    "N4": {
+      "title": "Olkhon Island, Capes, cliffs at sunset, Lake Baikal, Russia",
+      "author": "Vyacheslav Argenberg",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Olkhon_Island,_Capes,_cliffs_at_sunset,_Lake_Baikal,_Russia.jpg",
+      "theme": "nature",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "wide": "lake-cliffs-wide.jpg"
+      }
+    },
+    "F1": {
+      "title": "Sky Aerial View From Airplane Window (London to Venice Treviso) in 2025.01",
+      "author": "CAPTAIN RAJU",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sky_Aerial_View_From_Airplane_Window_(London_to_Venice_Treviso)_in_2025.01.jpg",
+      "theme": "flight",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "wing-snow-peaks-header.jpg",
+        "card": "wing-snow-peaks-card.jpg"
+      }
+    },
+    "F2": {
+      "title": "Sunset from a plane (Unsplash)",
+      "author": "Paul-Vincent Roll paviro",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sunset_from_a_plane_(Unsplash).jpg",
+      "theme": "flight",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "wing-sunset-header.jpg",
+        "card": "wing-sunset-card.jpg"
+      }
+    },
+    "B2": {
+      "title": "Sunset Key and Sailboats, Florida, 2025",
+      "author": "Julian Lupyan",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sunset_Key_and_Sailboats,_Florida,_2025.jpg",
+      "theme": "boat",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "sailboats-sea-header.jpg",
+        "card": "sailboats-sea-card.jpg"
+      }
+    },
+    "B4": {
+      "title": "Gondola in the Grand Canal, Venice",
+      "author": "Avisadehh",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:GONDOLA_IN_GARAND_CANAL_VENICE.%D7%92%D7%95%D7%A0%D7%93%D7%95%D7%9C%D7%94_%D7%91%D7%AA%D7%A2%D7%9C%D7%94_%D7%94%D7%92%D7%93%D7%95%D7%9C%D7%94_%D7%95%D7%A0%D7%A6%D7%99%D7%94.jpg",
+      "theme": "boat",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "gondola-venice-header.jpg",
+        "card": "gondola-venice-card.jpg"
+      }
+    },
+    "R3": {
+      "title": "Stelvio Pass (Unsplash)",
+      "author": "Raul Taciu raultaciu",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Stelvio_Pass_(Unsplash).jpg",
+      "theme": "road",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "stelvio-pass-header.jpg",
+        "card": "stelvio-pass-card.jpg"
+      }
+    },
+    "R4": {
+      "title": "Transfagarasan Road (Unsplash)",
+      "author": "Livin4wheel livin4wheel",
+      "license": "CC0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Transfagarasan_Road_(Unsplash).jpg",
+      "theme": "road",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "transfagarasan-header.jpg",
+        "card": "transfagarasan-card.jpg"
+      }
+    },
+    "T5": {
+      "title": "Clogwyn Station with steam train",
+      "author": "Denis Egan",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Clogwyn_Station_with_steam_train.jpg",
+      "theme": "train",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "steam-train-header.jpg",
+        "card": "steam-train-card.jpg"
+      }
+    },
+    "N2": {
+      "title": "Ergaki, Buiba Valley, Western Sayan Mountains, Krasnoyarsk Krai, Russia",
+      "author": "Vyacheslav Argenberg",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ergaki,_Buiba_Valley,_Western_Sayan_Mountains,_Krasnoyarsk_Krai,_Russia.jpg",
+      "theme": "nature",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "alpine-valley-header.jpg",
+        "card": "alpine-valley-card.jpg",
+        "panel": "alpine-valley-panel.jpg"
+      }
+    },
+    "N9": {
+      "title": "Zagedan Lakes, Mountain cirque, Caucasus Mountains",
+      "author": "Vyacheslav Argenberg",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Zagedan_Lakes,_Mountain_cirque,_Caucasus_Mountains.jpg",
+      "theme": "nature",
+      "changes": "Resized and recompressed for the web",
+      "files": {
+        "header": "mountain-cirque-header.jpg",
+        "card": "mountain-cirque-card.jpg"
+      }
+    }
+  },
+  "roles": {
+    "banner": [
+      "F3",
+      "B7",
+      "R6",
+      "N3",
+      "N4"
+    ],
+    "login": "N2",
+    "set": [
+      "F1",
+      "F2",
+      "B2",
+      "B4",
+      "R3",
+      "R4",
+      "T5",
+      "N2",
+      "N9"
+    ],
+    "strip": {
+      "fly": "F2",
+      "sail": "B2",
+      "drive": "R3",
+      "rails": "T5"
+    }
+  }
+}

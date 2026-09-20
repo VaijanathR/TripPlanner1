@@ -7,7 +7,8 @@ import DayEditor from "../components/DayEditor";
 import DestinationGuide from "../components/DestinationGuide";
 import DestinationPicker from "../components/DestinationPicker";
 import { PinIcon } from "../components/Icons";
-import { HeroScene } from "../components/Illustrations";
+import HeroPhoto from "../components/HeroPhoto";
+import { tripHeaderPhoto } from "../photos/photos";
 import ShareLink from "../components/ShareLink";
 import { useGuide } from "../hooks/useGuide";
 import { nextSlot } from "../utils/schedule";
@@ -178,11 +179,14 @@ export default function ItineraryEditor() {
 
   return (
     <>
-      <header
-        className={`trip-hero${heroPhoto ? " has-photo" : ""}`}
-        style={heroPhoto ? { backgroundImage: `linear-gradient(rgba(6, 30, 42, 0.35), rgba(6, 30, 42, 0.7)), url("${heroPhoto}")` } : undefined}
-      >
-        {!heroPhoto && <HeroScene className="hero-art" />}
+      <header className={`trip-hero${heroPhoto ? " has-photo" : ""}`}>
+        {/* The destination's own photo when there is one, otherwise a set photo
+            that stays the same for this trip. */}
+        {heroPhoto ? (
+          <HeroPhoto src={heroPhoto} alt={destination ? `Photo of ${destination.city ?? destination.country}` : "Destination photo"} />
+        ) : (
+          <HeroPhoto src={tripHeaderPhoto(trip.id).url} />
+        )}
         <div className="hero-inner">
           <Link className="back-link" to="/">← Trip List</Link>
           <h1>{trip.name}</h1>

@@ -186,3 +186,20 @@ describe("App routing", () => {
     expect(sharingApi.read).toHaveBeenCalledWith("tok-1");
   });
 });
+
+describe("ShareView: imagery", () => {
+  it("shows a decorative set photo in the header, the same one for the same trip", async () => {
+    sharingApi.read.mockResolvedValue(sharedTrip);
+    const first = render(<MemoryRouter initialEntries={["/share/tok"]}><Routes><Route path="/share/:token" element={<ShareView />} /></Routes></MemoryRouter>);
+    await screen.findByText("Kyoto in Autumn");
+    const img = document.querySelector(".trip-hero img.hero-photo");
+    expect(img.getAttribute("src")).toMatch(/\/photos\/.+-header\.jpg$/);
+    expect(img).toHaveAttribute("alt", "");
+    const src = img.getAttribute("src");
+    first.unmount();
+
+    render(<MemoryRouter initialEntries={["/share/tok"]}><Routes><Route path="/share/:token" element={<ShareView />} /></Routes></MemoryRouter>);
+    await screen.findByText("Kyoto in Autumn");
+    expect(document.querySelector(".trip-hero img.hero-photo").getAttribute("src")).toBe(src);
+  });
+});
