@@ -189,6 +189,8 @@ Wikidata (notable places). Endpoint shapes are in `specs/api-contract.md`
 - A trip's destination is stored from the geocoder's answer for the chosen id —
   never from client-sent names or coordinates — and only the trip's owner can set,
   change, clear or read the guide for it.
+- A trip can be created with its destination in one step. It is all or nothing: if
+  the destination can't be set, no trip is created.
 - A guide has photos of the city, state and country, popular places in the city
   (≤15 km) and around it (15–30 km), and things to do derived from the places'
   types.

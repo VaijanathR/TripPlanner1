@@ -83,8 +83,15 @@ maps/weather panels as the Editor, but with no edit controls.
 - Given the user deletes a trip and the delete fails, the UI keeps the
   card, shows an inline error on that card, and leaves the rest of the
   list interactive.
-- Given the user creates a new trip successfully, the UI navigates to
-  the Itinerary Editor for that trip.
+- Given the Create trip form, it asks for the trip name and a place: Country,
+  State / region and City, searched and chosen exactly as in the Editor's
+  "Where are you going?" (matching places to pick from, "Did you mean one of
+  these?" when nothing matches). Create trip is available only once a name has
+  been entered and a place chosen; changing a place field clears the chosen place.
+- Given the user creates a trip successfully, it has the chosen destination and
+  the UI navigates to the Itinerary Editor for it, on its Discover tab.
+- Given creating the trip fails (including the place not being saved), no trip is
+  created, the reason is shown, and what was entered is kept.
 
 ### Itinerary Editor
 
@@ -134,7 +141,8 @@ maps/weather panels as the Editor, but with no edit controls.
 
 ### Destination and Discover
 
-- Given a trip has no destination, the Editor asks "Where are you going?" with
+- Given a trip has no destination (one made before a place was required at
+  creation), the Editor asks "Where are you going?" with
   Country, State / region and City inputs; a search needs at least a 2-letter city.
 - Given a search, the UI lists every matching place ("Paris, Texas, United States"
   and "Paris, Île-de-France Region, France") to choose from; when nothing matches it

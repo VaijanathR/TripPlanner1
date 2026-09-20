@@ -100,7 +100,8 @@ List all trips, summary form (no nested days/activities).
 ### `POST /api/trips`
 Create a trip.
 
-- **Request**: `{ "name": "Kyoto in Autumn" }`
+- **Request**: `{ "name": "Kyoto in Autumn" }`, optionally with `"geoname_id": 1857910`
+  to create the trip with that destination (see "Destinations").
 - **201** → full Trip Detail shape (see below), `"days": []`,
   `"share_token": null`.
 - **422** — empty/missing `name`:
@@ -108,6 +109,12 @@ Create a trip.
   { "error": { "code": "validation_error", "message": "Trip name is required",
     "fields": { "name": "must not be empty" } } }
   ```
+- With `geoname_id`, the trip is created **and** given that destination in one
+  step: the response is the trip detail with its `destination`, and the guide
+  starts building in the background. Only the id is taken from the client, as for
+  `PUT …/destination`. If the destination can't be set, **no trip is created**:
+  **404** `place_not_found` (unknown id), **422** (id not a positive integer),
+  **503** `destinations_unavailable`. Without `geoname_id`, nothing changes.
 
 ### `GET /api/trips/{trip_id}`
 Fetch one trip with its full itinerary — this is what the Itinerary
