@@ -2,8 +2,10 @@
 
 Implements specs/api-contract.md "Rate limits" and specs/backend-spec.md
 "Rate limiting". Attempts are stored in the database (so limits survive a
-restart) as SHA-256 hashes of the email and the caller address -- never the raw
-values.
+restart) as keyed hashes (HMAC-SHA-256, keyed from JWT_SECRET) of the email and
+the caller address -- never the raw values. Keyed, so a copy of the table cannot
+be turned back into addresses by trying every possible one. Rotating JWT_SECRET
+changes every hash, which just restarts the counters (they only last minutes).
 
 Design points worth knowing when reading the code:
 - Sliding windows: a lock ends when the oldest counted attempt is older than the
@@ -20,6 +22,7 @@ Design points worth knowing when reading the code:
 
 import datetime
 import hashlib
+import hmac
 import logging
 import math
 import threading
@@ -30,6 +33,7 @@ from fastapi import Depends, Request
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, sessionmaker
 
+import auth
 import models
 from database import get_db
 from errors import AppError
@@ -62,8 +66,15 @@ def _aware(moment: datetime.datetime) -> datetime.datetime:
     return moment.replace(tzinfo=datetime.UTC) if moment.tzinfo is None else moment
 
 
-def sha256(value: str) -> str:
-    return hashlib.sha256(value.encode()).hexdigest()
+_HASH_KEY_LABEL = b"trip-planner/auth-attempts/v1"
+
+
+def keyed_hash(value: str) -> str:
+    """HMAC-SHA-256 of `value`. The key is derived from JWT_SECRET (with a label,
+    so the raw signing secret is never used for anything else), which means no
+    extra setting to manage."""
+    key = hmac.new(auth.get_jwt_secret().encode(), _HASH_KEY_LABEL, hashlib.sha256).digest()
+    return hmac.new(key, value.encode(), hashlib.sha256).hexdigest()
 
 
 def normalize_email(email: str) -> str:
@@ -156,8 +167,8 @@ def reserve_login_attempt(db: Session, request: Request, email: str) -> Reservat
     """Call BEFORE checking the password. Raises 429 if R1 or R2 is exceeded;
     otherwise records the attempt as a failure until `release_login_success`.
     Returns None if the limiter could not run (fail open)."""
-    email_hash = sha256(normalize_email(email))
-    address_hash = sha256(client_address(request))
+    email_hash = keyed_hash(normalize_email(email))
+    address_hash = keyed_hash(client_address(request))
     blocked_for = 0
     reservation = None
     try:
@@ -207,7 +218,7 @@ def release_login_success(db: Session, reservation: Reservation | None) -> None:
 
 
 def _admit(db: Session, request: Request, kind: str, limit: int, window: datetime.timedelta) -> None:
-    address_hash = sha256(client_address(request))
+    address_hash = keyed_hash(client_address(request))
     blocked_for = 0
     try:
         with _lock, _session(db) as session:

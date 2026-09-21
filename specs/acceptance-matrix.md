@@ -162,7 +162,7 @@ From [backend-spec.md](backend-spec.md) "Rate limiting" and [api-contract.md](ap
 | K10 | If the attempts table can't be read or written, the request proceeds and the problem is logged | `test_login_still_works_when_the_attempts_table_is_unavailable`, `test_signup_and_google_still_work_when_the_attempts_table_is_unavailable`, `test_when_the_table_is_unavailable_nothing_is_ever_locked`, `test_a_real_lock_is_not_mistaken_for_a_failure_of_the_limiter`, `test_running_migrations_in_process_does_not_silence_the_applications_loggers` (the problem is logged only if the logger is enabled) | Yes |
 | K11 | The refusal is `429 too_many_attempts` with a `Retry-After` header and a "try again in N minutes" message, on login, sign-up and Google sign-in | `test_every_refusal_has_the_documented_shape`, `test_after_three_failures_even_the_correct_password_is_refused` (message and header), `test_a_short_wait_is_worded_as_one_minute` | Yes |
 | K12 | The Login screen shows that message and keeps the entered email | Login: "shows the server's 'try again in N minutes' message and keeps the entered email", "shows the same message when sign-up is refused", "shows the same message when Google sign-in is refused" | Yes |
-| K13 | The stored hashes cannot be reproduced without the application secret | *(tests named when written)* | Yes |
+| K13 | The stored hashes cannot be reproduced without the application secret | `test_stored_hashes_are_not_plain_sha256_so_a_table_leak_cannot_be_brute_forced`, `test_the_stored_hashes_depend_on_the_application_secret`, `test_different_values_get_different_hashes` | Yes |
 
 ## I. Frontend spec: Destination and Discover
 

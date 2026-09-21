@@ -3,6 +3,7 @@ backend-spec "Rate limiting")."""
 
 import concurrent.futures
 import datetime
+import hashlib
 import logging
 import os
 import pathlib
@@ -159,7 +160,7 @@ def test_the_limiter_normalises_emails_itself_and_does_not_rely_on_the_request_s
             ratelimit.reserve_login_attempt(db, request, typed)
 
         stored = {r.email_hash for r in db.query(models.AuthAttempt).filter_by(kind="login_failure")}
-        assert stored == {ratelimit.sha256("alice@example.com")}
+        assert stored == {ratelimit.keyed_hash("alice@example.com")}
         with pytest.raises(AppError) as refused:
             ratelimit.reserve_login_attempt(db, request, " aLiCe@example.com")  # the fourth, however written
     assert refused.value.status_code == 429
@@ -466,9 +467,33 @@ def test_only_hashes_are_stored_never_the_raw_email_or_address(alice, db_session
     assert "alice@example.com" not in flat and "carol@example.com" not in flat
     assert "203.0.113.7" not in flat and "192.0.2.44" not in flat
     failure = next(r for r in stored if r[0] == "login_failure")
-    assert failure[1] == ratelimit.sha256("alice@example.com")
-    assert failure[2] == ratelimit.sha256("203.0.113.7")
+    assert failure[1] == ratelimit.keyed_hash("alice@example.com")
+    assert failure[2] == ratelimit.keyed_hash("203.0.113.7")
     assert re.fullmatch(r"[0-9a-f]{64}", failure[1]) and re.fullmatch(r"[0-9a-f]{64}", failure[2])
+
+
+def test_stored_hashes_are_not_plain_sha256_so_a_table_leak_cannot_be_brute_forced(alice, db_session_factory):
+    fail(alice, "alice@example.com", address="203.0.113.7")
+
+    with db_session_factory() as db:
+        failure = db.query(models.AuthAttempt).filter_by(kind="login_failure").one()
+    for raw, stored in (("alice@example.com", failure.email_hash), ("203.0.113.7", failure.address_hash)):
+        assert stored != hashlib.sha256(raw.encode()).hexdigest()
+
+
+def test_the_stored_hashes_depend_on_the_application_secret(monkeypatch):
+    first = ratelimit.keyed_hash("203.0.113.7")
+    assert ratelimit.keyed_hash("203.0.113.7") == first  # stable, or limits could never match
+
+    monkeypatch.setenv("JWT_SECRET", "another-secret-that-is-at-least-32-characters-long")
+    assert ratelimit.keyed_hash("203.0.113.7") != first
+
+    monkeypatch.undo()
+    assert ratelimit.keyed_hash("203.0.113.7") == first
+
+
+def test_different_values_get_different_hashes():
+    assert ratelimit.keyed_hash("203.0.113.7") != ratelimit.keyed_hash("203.0.113.8")
 
 
 def test_a_successful_login_leaves_no_failure_record_behind(alice, db_session_factory):
@@ -484,7 +509,7 @@ def test_signups_and_google_attempts_are_recorded_by_address_only(anon_client, g
     signup = rows(db_session_factory, kind="signup")[0]
     goog = rows(db_session_factory, kind="google")[0]
     assert signup.email_hash is None and goog.email_hash is None
-    assert signup.address_hash == ratelimit.sha256("192.0.2.44")
+    assert signup.address_hash == ratelimit.keyed_hash("192.0.2.44")
 
 
 def test_old_records_are_purged_but_recent_ones_are_kept(alice, db_session_factory, clock):
