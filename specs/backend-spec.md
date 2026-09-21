@@ -152,8 +152,8 @@ The public sign-in endpoints (`/api/auth/login`, `/api/auth/register`,
 `/api/auth/google`) are rate limited; the rules and the `429` response are in
 `specs/api-contract.md` ("Rate limits"). Attempts are recorded in the database
 (a table for attempt counters), so limits survive a restart. Only hashed keys are
-stored — a SHA-256 of the email and of the caller address — never raw emails or
-addresses.
+stored — an HMAC-SHA-256 of the email and of the caller address, keyed from the
+application's secret — never raw emails or addresses.
 
 ### Acceptance criteria
 - Each of the four limits (R1 to R4) is enforced, and each is independent of the
@@ -165,6 +165,7 @@ addresses.
   email (R1 is per email *and* address).
 - Counters survive a restart of the application.
 - Raw emails and raw caller addresses are never stored.
+- The stored hashes cannot be reproduced without the application secret.
 - Old attempt records are purged automatically.
 - Supplying a forged earlier `X-Forwarded-For` entry does not let a caller evade
   a limit.
