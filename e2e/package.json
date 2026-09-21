@@ -1,0 +1,12 @@
+{
+  "name": "e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "End-to-end browser tests: real Chromium, real backend (throwaway database, upstream services faked).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

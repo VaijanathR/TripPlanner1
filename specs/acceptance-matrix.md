@@ -220,17 +220,17 @@ From [frontend-spec.md](frontend-spec.md) "Trip List", [api-contract.md](api-con
 
 ## N. End-to-end journeys and post-deploy smoke test
 
-Real browser, real backend (throwaway database, upstream services faked). Test names are filled in when the tests are written.
+Real browser, real backend (throwaway database, upstream services faked). Journeys N1 to N6 are Playwright tests under `e2e/` (file and title given); N7 is the smoke-test script, tested with fake servers.
 
 | # | Criterion | Tests | Automated |
 |---|---|---|---|
-| N1 | A visitor can sign up, is taken to the Trip List, stays signed in after a reload, can log out, and can log in again | *(named when written)* | Yes |
-| N2 | A wrong password shows an error, and after three wrong attempts the Login screen shows the "try again in N minutes" message | *(named when written)* | Yes |
-| N3 | A signed-in user can create a trip with a place, open it, add an activity to a day, and still see it after a reload | *(named when written)* | Yes |
-| N4 | The Discover tab shows the destination guide, and adding a place to a day puts it in the itinerary | *(named when written)* | Yes |
-| N5 | A share link opens the read-only view without a login, and another user cannot open the trip | *(named when written)* | Yes |
-| N6 | An anonymous visitor opening a trip is sent to Login and returned to that trip afterwards | *(named when written)* | Yes |
-| N7 | After every deploy to `main`, an automated smoke test confirms the backend is healthy, requires a login, allows the production frontend origin, and that the frontend loads, serves deep links, and has the backend address built in | *(named when written)* | Yes (in CI, after deploy) |
+| N1 | A visitor can sign up, is taken to the Trip List, stays signed in after a reload, can log out, and can log in again | e2e/tests/journeys.spec.js: "N1: a visitor signs up, stays signed in after a reload, logs out and logs in again" | Yes |
+| N2 | A wrong password shows an error, and after three wrong attempts the Login screen shows the "try again in N minutes" message | e2e/tests/journeys.spec.js: "N2: a wrong password shows an error, and repeated wrong attempts lock the account for a while" | Yes |
+| N3 | A signed-in user can create a trip with a place, open it, add an activity to a day, and still see it after a reload | e2e/tests/journeys.spec.js: "N3: a signed-in user creates a trip with a place, adds an activity and still sees it after a reload" | Yes |
+| N4 | The Discover tab shows the destination guide, and adding a place to a day puts it in the itinerary | e2e/tests/journeys.spec.js: "N4: the Discover tab shows the guide and adding a place puts it in the itinerary" | Yes |
+| N5 | A share link opens the read-only view without a login, and another user cannot open the trip | e2e/tests/journeys.spec.js: "N5: a share link opens the read-only view without a login, and another user cannot open the trip" | Yes |
+| N6 | An anonymous visitor opening a trip is sent to Login and returned to that trip afterwards | e2e/tests/journeys.spec.js: "N6: an anonymous visitor opening a trip is sent to Login and returned to that trip" | Yes |
+| N7 | After every deploy to `main`, an automated smoke test confirms the backend is healthy, requires a login, allows the production frontend origin, and that the frontend loads, serves deep links, and has the backend address built in | `test_a_healthy_deployment_passes_every_check`, `test_the_backend_is_retried_while_it_wakes_up_and_then_passes`, `test_a_backend_that_never_becomes_healthy_fails_the_health_check`, `test_an_unreachable_backend_fails_without_crashing_the_run`, `test_an_open_api_fails_the_login_required_check`, `test_a_backend_that_does_not_allow_the_frontend_origin_fails_the_cors_check`, `test_a_frontend_that_does_not_load_fails`, `test_a_missing_deep_link_rewrite_fails_the_deep_link_check`, `test_a_bundle_without_the_backend_address_fails`, `test_a_bundle_with_the_sensitive_placeholder_fails`, `test_the_exit_code_and_report_reflect_the_result` (all in `backend/tests/test_smoke_script.py`; the job itself is `smoke-test` in `.github/workflows/ci.yml`) | Yes (in CI, after deploy) |
 
 ## Supporting tests (no criterion of their own)
 

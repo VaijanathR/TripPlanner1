@@ -38,10 +38,13 @@ npm run dev
 Backend: `cd backend && ./venv/bin/python -m pytest`
 Frontend: `cd frontend && npm test` (about 20 minutes on WSL because every test file starts slowly; run single files with `npx vitest run <file>` while working, the full suite before pushing)
 
-CI (`.github/workflows/ci.yml`) runs both on every push and pull request.
+End-to-end: `cd e2e && npm ci && npx playwright install chromium && E2E_PYTHON=../backend/venv/bin/python npm test` (about 35 s). Real Chromium against the real backend (`e2e/serve_backend.py`: throwaway database, upstream services and weather faked from `backend/tests/fakes.py`, no network) and a fresh production build of the frontend. Ports 8000 and 4173 must be free (servers are always started fresh, never reused). Each test uses its own made-up `X-Forwarded-For` so the sign-in rate limits never collide. Journeys N1–N6 in the acceptance matrix.
+Post-deploy smoke test: `python scripts/smoke_test.py <backend-url> <frontend-url>` — read-only, creates nothing; also tested offline by `backend/tests/test_smoke_script.py`.
+
+CI (`.github/workflows/ci.yml`) runs backend, frontend and e2e tests on every push and pull request; after a deploy to `main` the `smoke-test` job checks the live app (a failure turns the run red, nothing is rolled back).
 
 ## Deployment
-- Both deploys run from `.github/workflows/ci.yml`, only on a push to `main`, and only after **both** `backend-tests` and `frontend-tests` pass.
+- Both deploys run from `.github/workflows/ci.yml`, only on a push to `main`, and only after `backend-tests`, `frontend-tests` **and** `e2e-tests` pass. The `smoke-test` job then checks the live app (needs the repo variable `VITE_API_URL`; the frontend URL is written in the workflow).
 - Backend: Azure App Service (`VaijTripPlanner`, F1 free tier), deployed by the `deploy-backend` job.
 - Frontend: Vercel (root directory `frontend`), deployed by the `deploy-frontend` job via the Vercel CLI. Vercel's own Git auto-deploy is turned off in `frontend/vercel.json`. Needs GitHub secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`. Production URL: https://trip-planner1-nu.vercel.app
 - Frontend -> backend: build-time env var `VITE_API_URL` (backend origin, no `/api`; see `frontend/.env.example`). In CI it comes from the **GitHub repo variable** `VITE_API_URL`, not from Vercel: the copy stored in the Vercel project is a sensitive variable, and `vercel pull` turns those into the literal text `[SENSITIVE]`. Changing it needs a new deploy (push to `main`). Defaults to `http://127.0.0.1:8000` locally.
