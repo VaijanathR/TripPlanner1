@@ -1343,3 +1343,17 @@ select:focus {
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* Keep the top bar on one line at phone width now that it carries Account/Admin links. */
+.user-bar .brand-name,
+.user-bar .btn-ghost,
+.user-links a {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .user-bar { gap: 8px; padding-inline: 12px; }
+  .user-bar-right { gap: 8px; }
+  .user-links { gap: 8px; }
+  .user-bar .brand-name { font-size: 1.05rem; }
+}
