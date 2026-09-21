@@ -17,6 +17,7 @@
 - `e2e/` — Playwright browser journeys with their own `package.json` (see Testing)
 - `scripts/smoke_test.py` — post-deploy check of the live app
 - `specs/` — the agreed specs (see below); `.github/workflows/ci.yml` — CI and both deploys
+- `local-notes/Project_Summary.md` — a full written summary of the project (history, architecture, decisions, gotchas). `local-notes/` is gitignored, so it exists only on the author's machine.
 - `.claude/skills/run-trip-planner/` — local helper to start the app and take screenshots (`start.sh`, `shot.cjs`). `.claude/` is gitignored, so it exists only on the author's machine.
 
 ## Specs
@@ -87,6 +88,7 @@ Real, licensed travel photos (flight, boat, road, train, nature) instead of draw
 
 ## Working agreement
 - Never edit `specs/` without the user's approval: discuss a plan → the user approves → show the exact spec wording → write it (its own commit) → code strictly to the spec. New enhancements are proposed first.
+- **Before showing spec wording, sweep all the specs and the matrix for older statements the change makes untrue, and put those edits in the same proposal.** Approving only the new text left stale lines behind (rate limiting, "not yet written", the API-key constraint, the Data Model); a full sweep on 2026-09-21 had to clean them up.
 - Commit locally, show the result (screenshots in light and dark for UI work), and push only when the user says so: every push to `main` redeploys both apps.
 - Ask before creating accounts or data on production, using Azure/Kudu credentials, or changing production settings. The production `JWT_SECRET` was set by the user themselves (never shown to Claude): never read it back or change it.
 - When done or needing attention, run `~/bin/notify-user.sh "<title>" "<message>"`.
