@@ -286,6 +286,6 @@ per-deployment temporary folder that is discarded on every deploy.
 ## Out of scope for this spec
 - Exact endpoint routes, request/response schemas, and status codes —
   covered in `specs/api-contract.md` (not yet written).
-- Password reset, email verification, token revocation, and rate limiting
-  on login (see api-contract.md "Out of scope").
+- Password reset, email verification, and token revocation (see
+  api-contract.md "Out of scope").
 - Choice of specific relational database engine.
