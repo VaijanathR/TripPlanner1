@@ -26,6 +26,7 @@ export default function Login() {
   const [error, setError] = useState(null);
 
   const destination = location.state?.from ?? "/";
+  const notice = location.state?.notice ?? null; // e.g. "Your account was deleted."
 
   if (status === "authed") return <Navigate to={destination} replace />;
 
@@ -76,6 +77,12 @@ export default function Login() {
           Create account
         </button>
       </div>
+
+      {notice && (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      )}
 
       <form className="auth-form" onSubmit={handleSubmit}>
         <label>

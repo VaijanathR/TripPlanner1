@@ -1248,3 +1248,98 @@ select:focus {
   background: var(--primary-soft);
   border-color: var(--primary);
 }
+
+/* ---- Account and Admin ---- */
+.user-links {
+  display: flex;
+  gap: 12px;
+}
+
+.user-links a {
+  color: var(--primary-strong);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.user-links a:hover {
+  text-decoration: underline;
+}
+
+.danger-zone {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--ink);
+}
+
+.danger-zone h2 {
+  margin-top: 0;
+}
+
+.danger-zone form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.danger-zone label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.admin-users {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-users li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.admin-user-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.admin-user-main strong {
+  overflow-wrap: anywhere;
+}
+
+.admin-user-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.admin-users .inline-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.badge {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 0.78rem;
+  font-weight: 700;
+}

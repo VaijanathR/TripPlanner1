@@ -66,5 +66,6 @@ export const api = {
   get: (path) => request(path),
   post: (path, data) => request(path, { method: "POST", body: JSON.stringify(data) }),
   put: (path, data) => request(path, { method: "PUT", body: JSON.stringify(data) }),
-  del: (path) => request(path, { method: "DELETE" }),
+  // `data` is optional: a few DELETEs (deleting your account) carry a confirmation.
+  del: (path, data) => request(path, { method: "DELETE", ...(data === undefined ? {} : { body: JSON.stringify(data) }) }),
 };

@@ -6,6 +6,8 @@ import RequireAuth from './components/RequireAuth'
 import ShareView from './pages/ShareView'
 import ItineraryEditor from './pages/ItineraryEditor'
 import Credits from './pages/Credits'
+import Account from './pages/Account'
+import Admin from './pages/Admin'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
       {/* Everything else needs a login. */}
       <Route path="/" element={<RequireAuth><TripList /></RequireAuth>} />
       <Route path="/trips/:tripId" element={<RequireAuth><ItineraryEditor /></RequireAuth>} />
+      <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
+      <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
     </Routes>
     <SiteFooter />
     </>

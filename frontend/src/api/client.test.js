@@ -94,3 +94,27 @@ describe("api client: expired sessions", () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
   });
 });
+
+describe("api client: DELETE with a body", () => {
+  it("sends no body for an ordinary DELETE", async () => {
+    await api.del("/trips/1");
+
+    expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
+    expect(fetchMock.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it("sends the JSON body when one is given (deleting your account carries a confirmation)", async () => {
+    await api.del("/auth/me", { confirmation: "secret" });
+
+    expect(fetchMock.mock.calls[0][1].method).toBe("DELETE");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ confirmation: "secret" });
+  });
+
+  it("does not treat a 403 on /auth/me as a dead session", async () => {
+    tokenStore.set("tok-123");
+    fetchMock.mockResolvedValue(respond(403, { error: { code: "confirmation_failed", message: "no" } }));
+
+    await expect(api.del("/auth/me", { confirmation: "x" })).rejects.toMatchObject({ status: 403 });
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+});

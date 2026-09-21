@@ -252,3 +252,23 @@ describe("Login: imagery", () => {
     expect(screen.getByText("Plan the trip. Share the adventure.")).toBeInTheDocument();
   });
 });
+
+describe("Login: after an account was deleted", () => {
+  it("says so when it is opened with that notice", () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: "/login", state: { notice: "Your account was deleted." } }]}>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("Your account was deleted.");
+  });
+
+  it("shows no notice on an ordinary visit", () => {
+    renderLogin();
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});
