@@ -7,11 +7,17 @@
 
 ## Directory layout
 - `backend/` — FastAPI project
-  - `main.py` — app entrypoint, exposes `GET /health`
-  - `requirements.txt` — pinned dependencies
-  - `venv/` — local virtual environment (gitignored)
-- `frontend/` — React app scaffolded with Vite
-  - `src/App.jsx` — root component
+  - `main.py` — app entrypoint (routers, CORS, `GET /health`); `routers/` has one module per area (auth, admin, trips, days, destinations, conditions, sharing)
+  - `auth.py` (passwords, tokens, admin list, Google), `accounts.py` (account deletion), `ratelimit.py` (sign-in limits)
+  - `geocoding.py`, `guide.py`, `weather.py`, `upstream.py` — outside services; all HTTP goes through `upstream.py`
+  - `models.py`, `schemas.py`, `database.py`, `alembic/` — data and migrations
+  - `tests/` — pytest, fully offline (canned upstream answers in `tests/fakes.py`)
+  - `requirements.txt` — pinned dependencies; `venv/` — local virtual environment (gitignored)
+- `frontend/` — React app (Vite): `src/App.jsx` holds the routes; `src/pages/`, `components/`, `api/`, `auth/`, `hooks/`, `photos/`; each test sits next to the code it tests
+- `e2e/` — Playwright browser journeys with their own `package.json` (see Testing)
+- `scripts/smoke_test.py` — post-deploy check of the live app
+- `specs/` — the agreed specs (see below); `.github/workflows/ci.yml` — CI and both deploys
+- `.claude/skills/run-trip-planner/` — local helper to start the app and take screenshots (`start.sh`, `shot.cjs`). `.claude/` is gitignored, so it exists only on the author's machine.
 
 ## Specs
 - [Goal spec](specs/goal-spec.md)
@@ -38,7 +44,7 @@ npm run dev
 Backend: `cd backend && ./venv/bin/python -m pytest`
 Frontend: `cd frontend && npm test` (about 20 minutes on WSL because every test file starts slowly; run single files with `npx vitest run <file>` while working, the full suite before pushing)
 
-End-to-end: `cd e2e && npm ci && npx playwright install chromium && E2E_PYTHON=../backend/venv/bin/python npm test` (about 35 s). Real Chromium against the real backend (`e2e/serve_backend.py`: throwaway database, upstream services and weather faked from `backend/tests/fakes.py`, no network) and a fresh production build of the frontend. Ports 8000 and 4173 must be free (servers are always started fresh, never reused). Each test uses its own made-up `X-Forwarded-For` so the sign-in rate limits never collide. Journeys N1–N6 in the acceptance matrix.
+End-to-end: `cd e2e && npm ci && npx playwright install chromium && E2E_PYTHON=../backend/venv/bin/python npm test` (about 35 s). Real Chromium against the real backend (`e2e/serve_backend.py`: throwaway database, upstream services and weather faked from `backend/tests/fakes.py`, no network) and a fresh production build of the frontend. Ports 8000 and 4173 must be free (servers are always started fresh, never reused). Each test uses its own made-up `X-Forwarded-For` so the sign-in rate limits never collide. Journeys N1–N6, N8 and N9 in the acceptance matrix (N7 is the smoke test).
 Post-deploy smoke test: `python scripts/smoke_test.py <backend-url> <frontend-url>` — read-only, creates nothing; also tested offline by `backend/tests/test_smoke_script.py`.
 
 CI (`.github/workflows/ci.yml`) runs backend, frontend and e2e tests on every push and pull request; after a deploy to `main` the `smoke-test` job checks the live app (a failure turns the run red, nothing is rolled back).
@@ -55,7 +61,7 @@ CI (`.github/workflows/ci.yml`) runs backend, frontend and e2e tests on every pu
 Conditions come from Open-Meteo (geocoding + current weather) — **no API key**. The map is an OpenStreetMap embed plus link, built in `backend/weather.py`; the frontend never calls an upstream API. Endpoint tests use the offline stub (`tests/conftest.py`), never the network.
 
 ## Accounts
-Email + password and Google sign-in. Every `/api` route needs a login token (`Authorization: Bearer`) except register/login/google and the two public `/api/share/*` reads; a user only reaches their own trips (someone else's looks like a missing one). `backend/auth.py` holds the hashing, tokens and Google verification; `backend/tests/test_access_control.py` fails if any new route is left open, so a new public route must be added to its allowlist deliberately.
+Email + password sign-in. (Google sign-in is also implemented but **not used**: the user dropped it on 2026-09-21, the settings were never created, so the button is hidden and `/api/auth/google` answers 503. The code and its tests were left in place.) Every `/api` route needs a login token (`Authorization: Bearer`) except register/login/google and the two public `/api/share/*` reads; a user only reaches their own trips (someone else's looks like a missing one). `backend/auth.py` holds the hashing, tokens and Google verification; `backend/tests/test_access_control.py` fails if any new route is left open, so a new public route must be added to its allowlist deliberately.
 - Backend env: `JWT_SECRET` (required, >= 32 chars — the app refuses to start without it; a rotation logs everyone out), `GOOGLE_CLIENT_ID` (optional; Google sign-in returns 503 without it) and `ADMIN_EMAILS` (optional; comma-separated administrator addresses). All are Azure app settings; tests set a throwaway `JWT_SECRET` in `tests/conftest.py`.
 - Frontend env: `VITE_GOOGLE_CLIENT_ID` (public; from the GitHub repo variable of the same name in CI). Unset = the Google button is hidden.
 - Login, sign-up and Google sign-in are rate limited (`backend/ratelimit.py`, table `auth_attempts` holding HMAC-SHA-256 hashes keyed from `JWT_SECRET` — a rotation just restarts the counters —, rules R1–R4 in the backend spec; refusals are `429 too_many_attempts`; it fails open if its table is unreadable). The caller address is the last `X-Forwarded-For` entry (verified live on Azure).
@@ -82,7 +88,7 @@ Real, licensed travel photos (flight, boat, road, train, nature) instead of draw
 ## Working agreement
 - Never edit `specs/` without the user's approval: discuss a plan → the user approves → show the exact spec wording → write it (its own commit) → code strictly to the spec. New enhancements are proposed first.
 - Commit locally, show the result (screenshots in light and dark for UI work), and push only when the user says so: every push to `main` redeploys both apps.
-- Ask before creating accounts or data on production, using Azure/Kudu credentials, or changing production settings. `JWT_SECRET` handling is parked (no change without the user's go-ahead).
+- Ask before creating accounts or data on production, using Azure/Kudu credentials, or changing production settings. The production `JWT_SECRET` was set by the user themselves (never shown to Claude): never read it back or change it.
 - When done or needing attention, run `~/bin/notify-user.sh "<title>" "<message>"`.
 
 ## Database persistence (important on Azure)
