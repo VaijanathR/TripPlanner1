@@ -8,6 +8,7 @@ cookies. Tokens are stateless, so "log out" is client-side; they simply expire.
 
 Config comes from the environment and is read here only:
   JWT_SECRET        required; >= 32 chars; signs login tokens
+  ADMIN_EMAILS      optional; comma-separated administrator email addresses
   GOOGLE_CLIENT_ID  optional; enables Google sign-in when set
 """
 
@@ -126,6 +127,22 @@ def current_user(
     user = db.get(models.User, decode_access_token(credentials.credentials))
     if user is None:
         raise unauthenticated()
+    return user
+
+
+def admin_emails() -> set[str]:
+    """The administrators' addresses, read on every call (never cached) so a change
+    to the setting takes effect at once. Case and surrounding spaces don't matter."""
+    return {e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "").split(",") if e.strip()}
+
+
+def is_admin(user: models.User) -> bool:
+    return user.email.strip().lower() in admin_emails()
+
+
+def require_admin(user: models.User = Depends(current_user)) -> models.User:
+    if not is_admin(user):
+        raise AppError(403, "forbidden", "Administrator access is required")
     return user
 
 

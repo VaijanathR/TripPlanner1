@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+import accounts
 import auth
 import models
 import ratelimit
@@ -16,10 +17,19 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 _BAD_LOGIN = AppError(401, "invalid_credentials", "Incorrect email or password")
 
 
-def _auth_response(user: models.User) -> schemas.AuthResponse:
-    return schemas.AuthResponse(
-        access_token=auth.create_access_token(user), user=schemas.UserOut.model_validate(user)
+# Same message whichever way the confirmation was wrong. 403, not 401: the client
+# treats 401 as "your login expired" and would log the user out.
+_WRONG_CONFIRMATION = AppError(403, "confirmation_failed", "That doesn't match. Nothing was deleted.")
+
+
+def user_out(user: models.User) -> schemas.UserOut:
+    return schemas.UserOut(
+        id=user.id, email=user.email, is_admin=auth.is_admin(user), has_password=user.password_hash is not None
     )
+
+
+def _auth_response(user: models.User) -> schemas.AuthResponse:
+    return schemas.AuthResponse(access_token=auth.create_access_token(user), user=user_out(user))
 
 
 @router.post(
@@ -91,4 +101,29 @@ def google_login(payload: schemas.GoogleLoginRequest, db: Session = Depends(get_
 
 @router.get("/me", response_model=schemas.UserOut)
 def me(user: models.User = Depends(auth.current_user)):
-    return user
+    return user_out(user)
+
+
+@router.delete("/me", status_code=204)
+def delete_me(
+    payload: schemas.DeleteAccountRequest,
+    request: Request,
+    user: models.User = Depends(auth.current_user),
+    db: Session = Depends(get_db),
+):
+    if auth.is_admin(user):
+        raise AppError(
+            409,
+            "admin_account_protected",
+            "Administrator accounts can't be deleted. Remove this address from the administrator list first.",
+        )
+    if user.password_hash is not None:
+        # A wrong password counts as a failed login (same limits), so this endpoint
+        # can't be used to guess passwords around the login rate limit.
+        reservation = ratelimit.reserve_login_attempt(db, request, user.email)
+        if not auth.verify_password(payload.confirmation, user.password_hash):
+            raise _WRONG_CONFIRMATION
+        ratelimit.release_login_success(db, reservation)
+    elif payload.confirmation.strip().lower() != user.email.strip().lower():
+        raise _WRONG_CONFIRMATION
+    accounts.delete_account(db, user, actor=user)

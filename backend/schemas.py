@@ -213,10 +213,27 @@ class GoogleLoginRequest(BaseModel):
 
 
 class UserOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     id: int
     email: str
+    is_admin: bool
+    has_password: bool  # false for an account that only ever signed in with Google
+
+
+class DeleteAccountRequest(BaseModel):
+    # The current password, or -- for an account with no password -- its own email.
+    confirmation: str = Field(max_length=256)
+
+
+class AdminUserOut(BaseModel):
+    id: int
+    email: str
+    created_at: datetime.datetime
+    trip_count: int
+    is_admin: bool
+
+
+class AdminUserList(BaseModel):
+    users: list[AdminUserOut]
 
 
 class AuthResponse(BaseModel):

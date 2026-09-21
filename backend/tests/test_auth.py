@@ -25,7 +25,7 @@ def test_register_returns_a_working_token_and_the_user(anon_client):
     body = resp.json()
     assert body["token_type"] == "bearer"
     assert body["user"]["email"] == "alice@example.com"
-    assert set(body["user"]) == {"id", "email"}  # no hash, no google id
+    assert set(body["user"]) == {"id", "email", "is_admin", "has_password"}  # no hash, no google id
     me = anon_client.get("/api/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
     assert me.status_code == 200
     assert me.json() == body["user"]
