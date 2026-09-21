@@ -110,7 +110,7 @@ from its Days rather than stored redundantly.
   distinguishable outcomes so the frontend's inline-error and retry
   behavior (per frontend-spec.md) has something consistent to react to.
   Exact status codes and response shapes belong in
-  `specs/api-contract.md` (not yet written).
+  `specs/api-contract.md`.
 
 ## Accounts and access
 
@@ -285,7 +285,7 @@ per-deployment temporary folder that is discarded on every deploy.
 
 ## Out of scope for this spec
 - Exact endpoint routes, request/response schemas, and status codes —
-  covered in `specs/api-contract.md` (not yet written).
+  covered in `specs/api-contract.md`.
 - Password reset, email verification, and token revocation (see
   api-contract.md "Out of scope").
 - Choice of specific relational database engine.

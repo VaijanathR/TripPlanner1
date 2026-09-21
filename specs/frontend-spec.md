@@ -261,6 +261,5 @@ Lists all accounts and lets an administrator delete one.
 
 ## Out of scope for this spec
 - Visual design, styling, and component library choices.
-- Exact request/response shapes — covered in `specs/api-contract.md`
-  (not yet written).
+- Exact request/response shapes — covered in `specs/api-contract.md`.
 - Password reset, email verification, and changing account details.
