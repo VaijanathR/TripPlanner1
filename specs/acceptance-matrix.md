@@ -218,6 +218,20 @@ From [frontend-spec.md](frontend-spec.md) "Trip List", [api-contract.md](api-con
 | M7 | It is all or nothing: an unknown place (404), a geocoder outage (503) or a bad id (422) creates no trip; a blank name still fails | `test_an_unknown_place_creates_no_trip`, `test_the_geocoder_being_down_creates_no_trip`, `test_a_bad_destination_id_on_create_is_a_validation_error_and_creates_no_trip`, `test_a_missing_name_is_still_refused_when_a_place_is_given`. The real geocoder answers HTTP 400 (not 404) for an id that doesn't exist, and that must still be `404 place_not_found`, never a 503 outage: `test_an_id_the_geocoder_rejects_with_a_400_is_place_not_found_not_an_outage` (create and set), `test_get_place_is_none_when_the_geocoder_answers_400_for_an_unknown_id`, `test_get_place_still_raises_when_the_geocoder_is_really_down`, `test_a_400_is_reported_as_a_bad_request_and_is_still_an_upstream_error` | Yes |
 | M8 | Without `geoname_id` nothing changes | `test_creating_a_trip_without_a_destination_works_as_before` and every existing trip test | Yes |
 
+## N. End-to-end journeys and post-deploy smoke test
+
+Real browser, real backend (throwaway database, upstream services faked). Test names are filled in when the tests are written.
+
+| # | Criterion | Tests | Automated |
+|---|---|---|---|
+| N1 | A visitor can sign up, is taken to the Trip List, stays signed in after a reload, can log out, and can log in again | *(named when written)* | Yes |
+| N2 | A wrong password shows an error, and after three wrong attempts the Login screen shows the "try again in N minutes" message | *(named when written)* | Yes |
+| N3 | A signed-in user can create a trip with a place, open it, add an activity to a day, and still see it after a reload | *(named when written)* | Yes |
+| N4 | The Discover tab shows the destination guide, and adding a place to a day puts it in the itinerary | *(named when written)* | Yes |
+| N5 | A share link opens the read-only view without a login, and another user cannot open the trip | *(named when written)* | Yes |
+| N6 | An anonymous visitor opening a trip is sent to Login and returned to that trip afterwards | *(named when written)* | Yes |
+| N7 | After every deploy to `main`, an automated smoke test confirms the backend is healthy, requires a login, allows the production frontend origin, and that the frontend loads, serves deep links, and has the backend address built in | *(named when written)* | Yes (in CI, after deploy) |
+
 ## Supporting tests (no criterion of their own)
 
 These back the criteria above indirectly, or pin internal behaviour worth keeping:
