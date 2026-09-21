@@ -28,6 +28,14 @@ Read-only, no login required. View of an itinerary opened via its share
 link. Renders the same day-by-day plan (days and their activities) and
 maps/weather panels as the Editor, but with no edit controls.
 
+### 4. Account
+Reached from the "Account" link in the top bar. Shows the signed-in email and a
+"Delete my account" section.
+
+### 5. Admin
+Reached from the "Admin" link in the top bar, shown only to administrators.
+Lists all accounts and lets an administrator delete one.
+
 ## User Flow
 
 1. User opens the app → **Trip List**.
@@ -192,6 +200,38 @@ maps/weather panels as the Editor, but with no edit controls.
 - Given a day's maps/weather call fails or times out, the UI shows the
   same "unavailable" badge in place of the map as the Editor — the
   day's activities still render in full, never a crash.
+
+### Account
+
+- Every signed-in screen's top bar has an "Account" link; the Account screen
+  shows the signed-in email.
+- "Delete my account" states what will be deleted (the account, all its trips
+  and their share links) and that it cannot be undone, and asks for a
+  confirmation: a password field for an account with a password, or the
+  account's own email typed in for an account without one. The Delete button
+  stays disabled until that field is filled, and nothing is deleted before it
+  is pressed.
+- After a successful deletion the user is logged out and sent to Login, which
+  says the account was deleted.
+- A wrong confirmation shows "That doesn't match. Nothing was deleted." and
+  leaves the user signed in; a lock shows the same "try again in N minutes"
+  message as Login.
+- For an administrator the section shows no form, only that administrator
+  accounts can't be deleted until the address is removed from the administrator
+  list.
+
+### Admin
+
+- The "Admin" link appears only for administrators. A signed-in
+  non-administrator who opens the Admin address is told they aren't allowed; a
+  visitor who isn't logged in is sent to Login like any other screen.
+- The screen lists every account with its email, when it was created and how
+  many trips it has. Administrator accounts are marked "Admin" and have no
+  Delete button.
+- Deleting asks for confirmation naming the account's email. After confirming,
+  the account disappears from the list. If the server refuses, the error is
+  shown and the list is unchanged.
+- The screen never shows password data or any trip content.
 
 ### Imagery
 

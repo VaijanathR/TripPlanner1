@@ -36,6 +36,8 @@ including error cases. No implementation code.
   a trip (or a day, or a share-link request) belonging to someone else is
   answered exactly like one that doesn't exist — `404`, same body — so
   its existence is never revealed.
+  The `/api/admin/*` endpoints additionally require an administrator; anyone
+  else gets `403`.
 
 ## Auth
 
@@ -46,7 +48,7 @@ not a cookie, because the frontend and API are on different domains.
 ### `POST /api/auth/register`
 - **Request**: `{ "email": "a@b.co", "password": "at least 8 characters" }`.
   Email is trimmed and lower-cased; password is 8–128 characters.
-- **201** → `{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "a@b.co" } }`
+- **201** → `{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "a@b.co", "is_admin": false, "has_password": true } }`
 - **409** `email_taken` — an account with this email exists.
 - **422** `validation_error` — invalid email or password length.
 - **429** `too_many_attempts` — see [Rate limits](#rate-limits).
@@ -77,8 +79,36 @@ Identity Services and sends it here; the backend verifies it.
   pre-registered a victim's email retain access after the real owner arrives.
 
 ### `GET /api/auth/me`
-- **200** → `{ "id": 1, "email": "a@b.co" }`; **401** without a valid token.
-  The frontend uses this to check a stored token on load.
+- **200** → `{ "id": 1, "email": "a@b.co", "is_admin": false, "has_password": true }`;
+  **401** without a valid token. The frontend uses this to check a stored token
+  on load. `has_password` is false for an account that only ever signed in with
+  Google.
+
+### `DELETE /api/auth/me`
+Delete the caller's own account and everything it owns.
+- **Request**: `{ "confirmation": "<current password, or — for an account with no password — the account's own email address>" }`
+- **204** — deleted, no body.
+- **401** `unauthenticated`.
+- **403** `confirmation_failed` — the confirmation doesn't match; nothing was
+  deleted. (Not 401: the client treats 401 as "your login expired".)
+- **409** `admin_account_protected` — the account is an administrator's.
+- **429** `too_many_attempts` — a wrong password counts as a failed login, see
+  [Rate limits](#rate-limits).
+
+## Admin
+
+Administrators are named by the `ADMIN_EMAILS` setting (see backend-spec.md
+"Account deletion and the admin role").
+
+### `GET /api/admin/users`
+- **200** → `{ "users": [ { "id": 1, "email": "a@b.co", "created_at": "…", "trip_count": 2, "is_admin": false } ] }`, oldest first.
+- **401** `unauthenticated`; **403** `forbidden` — the caller is not an administrator.
+
+### `DELETE /api/admin/users/{user_id}`
+- **204** — the account and everything it owns are deleted.
+- **401** `unauthenticated`; **403** `forbidden`; **404** `user_not_found`;
+  **409** `admin_account_protected` — the account is an administrator's (which
+  includes the caller's own).
 
 ## Trips
 
@@ -400,13 +430,11 @@ for a real day under a valid token.
   trip behind that token. Same body shape as the share-fetch 404 above.
 
 ## Out of scope
-- Password reset, email verification, changing email/password, and account
-  deletion.
+- Password reset, email verification, and changing email/password.
 - Destinations below city level, multi-city trips with a destination per day, and
   any place data beyond Wikipedia/Wikidata (hotels, restaurants, opening hours).
 - Revoking a login token before it expires (tokens are stateless; logging
   out only discards the client's copy).
-- Rate limiting / lockout on the login endpoints.
 - Manually revoking a share link without deleting the trip —
   frontend-spec.md's flow only calls for *generating* a link, so no
   `DELETE /api/trips/{trip_id}/share` is specified here.

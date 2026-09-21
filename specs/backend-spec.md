@@ -115,8 +115,9 @@ from its Days rather than stored redundantly.
 ## Accounts and access
 
 Configuration is read from the environment only: `JWT_SECRET` (required,
-at least 32 characters, signs login tokens) and `GOOGLE_CLIENT_ID`
-(optional; enables Google sign-in). Endpoint shapes are in
+at least 32 characters, signs login tokens), `GOOGLE_CLIENT_ID`
+(optional; enables Google sign-in) and `ADMIN_EMAILS` (optional;
+comma-separated email addresses of administrators). Endpoint shapes are in
 `specs/api-contract.md` ("Auth").
 
 ### Acceptance criteria
@@ -145,6 +146,55 @@ at least 32 characters, signs login tokens) and `GOOGLE_CLIENT_ID`
 - The app refuses to start without a sufficiently long `JWT_SECRET`.
 - Trips that existed before accounts were introduced are kept, owned by a
   placeholder account that nobody can sign in to.
+
+## Account deletion and the admin role
+
+An account can be deleted by its owner or by an administrator. Deleting an
+account deletes the user and everything they own — trips, days and
+activities — and so also ends every share link of those trips. Login tokens
+are stateless, but a token for a deleted account is refused like any token
+for a user that no longer exists. Shared caches (destination guides) and the
+hashed sign-in attempt records are not account data and are left alone.
+
+Administrators are the accounts whose email address is listed in
+`ADMIN_EMAILS` (compared case-insensitively, surrounding spaces ignored). The
+list is read on every request, so adding or removing an address takes effect
+at once; unset or empty means nobody is an administrator. There is no
+administrator flag in the database and no way to become one through the API.
+An administrator can list accounts and delete other accounts; they cannot
+read anyone's trips.
+
+An administrator's account cannot be deleted through the app — by anyone,
+including its owner — while its address is in `ADMIN_EMAILS`. (Otherwise the
+freed address could be registered by someone else, who would inherit the
+administrator rights.)
+
+Every deletion is written to the server log with the acting account, the
+deleted account and the time.
+
+### Acceptance criteria
+- A user can delete their own account: the account, its trips, days and
+  activities are gone, and the share links of those trips answer like an
+  unknown share link.
+- Deleting your own account needs confirmation: an account with a password
+  must send its current password; an account without one (Google-only) must
+  send its own email address. A wrong or missing confirmation deletes nothing.
+- A wrong password sent to the deletion endpoint counts as a failed login
+  under the same limits (R1, R2) and is refused with `429` when locked.
+- After deletion the account's login token is refused with `401`, and its
+  email address can be registered again.
+- An administrator can list all accounts (id, email, when created, number of
+  trips, whether an administrator) and delete any account that is not an
+  administrator's. Nothing else about other accounts is exposed: no password
+  data, no trips.
+- A non-administrator is refused the admin endpoints with `403`, and nothing
+  is changed.
+- An administrator's account cannot be deleted, by an administrator or by its
+  owner, while its address is in `ADMIN_EMAILS`; once removed from the list it
+  can be.
+- Administrator rights follow the current `ADMIN_EMAILS` value on every
+  request, in both directions.
+- Every deletion is logged.
 
 ## Rate limiting
 
