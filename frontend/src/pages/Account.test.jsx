@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authApi } from "../api/auth";
 import { ApiError } from "../api/client";
@@ -12,18 +12,12 @@ vi.mock("../api/auth", () => ({ authApi: { deleteAccount: vi.fn() } }));
 const logout = vi.fn();
 const alice = { id: 1, email: "alice@example.com", is_admin: false, has_password: true };
 
-function LoginProbe() {
-  const location = useLocation();
-  return <p>LOGIN PAGE: {location.state?.notice ?? "no notice"}</p>;
-}
-
 function renderAccount(user = alice) {
   useAuth.mockReturnValue({ user, logout });
   return render(
     <MemoryRouter initialEntries={["/account"]}>
       <Routes>
         <Route path="/account" element={<Account />} />
-        <Route path="/login" element={<LoginProbe />} />
       </Routes>
     </MemoryRouter>
   );
@@ -74,14 +68,14 @@ describe("Account screen", () => {
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
   });
 
-  it("sends the confirmation, logs out and goes to Login with a notice that the account was deleted", async () => {
+  it("sends the confirmation, then ends the session with a notice that the account was deleted", async () => {
     authApi.deleteAccount.mockResolvedValue(null);
     renderAccount();
     typeConfirmation("secret-1");
 
     fireEvent.click(deleteButton());
 
-    await waitFor(() => expect(screen.getByText("LOGIN PAGE: Your account was deleted.")).toBeInTheDocument());
+    await waitFor(() => expect(logout).toHaveBeenCalledWith({ notice: "Your account was deleted." }));
     expect(authApi.deleteAccount).toHaveBeenCalledWith("secret-1");
     expect(logout).toHaveBeenCalledTimes(1);
   });
@@ -97,7 +91,6 @@ describe("Account screen", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("That doesn't match. Nothing was deleted.");
     expect(logout).not.toHaveBeenCalled();
-    expect(screen.queryByText(/LOGIN PAGE/)).not.toBeInTheDocument();
     expect(deleteButton()).toBeEnabled();
   });
 

@@ -25,6 +25,7 @@ DB_FILE.unlink(missing_ok=True)
 os.environ["JWT_SECRET"] = "e2e-only-secret-that-is-at-least-32-characters-long"
 os.environ["DATABASE_URL"] = f"sqlite:///{DB_FILE}"
 os.environ["CORS_ORIGINS"] = APP_ORIGIN
+os.environ["ADMIN_EMAILS"] = os.environ.get("E2E_ADMIN_EMAIL", "e2e-admin@example.com")
 
 subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=BACKEND, check=True)
 

@@ -254,14 +254,9 @@ describe("Login: imagery", () => {
 });
 
 describe("Login: after an account was deleted", () => {
-  it("says so when it is opened with that notice", () => {
-    render(
-      <MemoryRouter initialEntries={[{ pathname: "/login", state: { notice: "Your account was deleted." } }]}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </MemoryRouter>
-    );
+  it("says so when the session ended with that notice", () => {
+    useAuth.mockReturnValue({ ...auth, status: "anon", notice: "Your account was deleted." });
+    renderLogin();
 
     expect(screen.getByRole("status")).toHaveTextContent("Your account was deleted.");
   });

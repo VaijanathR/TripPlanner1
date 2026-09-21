@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth";
 import { useAuth } from "../auth/useAuth";
 
 export default function Account() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [confirmation, setConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
@@ -23,8 +21,8 @@ export default function Account() {
       setDeleting(false);
       return;
     }
-    logout();
-    navigate("/login", { replace: true, state: { notice: "Your account was deleted." } });
+    // Ends the session; the login guard then sends the user to Login, which shows the notice.
+    logout({ notice: "Your account was deleted." });
   }
 
   return (

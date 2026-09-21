@@ -10,7 +10,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { tokenStore } from "./auth/tokenStore";
 
 vi.mock("./api/auth", () => ({
-  authApi: { me: vi.fn(), login: vi.fn(), register: vi.fn(), google: vi.fn() },
+  authApi: { me: vi.fn(), login: vi.fn(), register: vi.fn(), google: vi.fn(), deleteAccount: vi.fn() },
 }));
 vi.mock("./api/admin", () => ({ adminApi: { users: vi.fn(), remove: vi.fn() } }));
 vi.mock("./api/trips", () => ({ tripsApi: { list: vi.fn(), get: vi.fn(), create: vi.fn(), remove: vi.fn() } }));
@@ -67,6 +67,21 @@ describe("App: the Account and Admin addresses", () => {
 
     expect(await screen.findByRole("list", { name: "Accounts" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin");
+  });
+
+  it("after deleting the account, lands on Login with the notice (the login guard's redirect must not hide it)", async () => {
+    tokenStore.set("tok");
+    authApi.me.mockResolvedValue(alice);
+    authApi.deleteAccount.mockResolvedValue(null);
+    renderApp("/account");
+    fireEvent.change(await screen.findByLabelText("Confirm with your password"), { target: { value: "secret-1" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete my account" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Your account was deleted.");
+    expect(screen.getByRole("tab", { name: "Log in" })).toBeInTheDocument();
+    expect(authApi.deleteAccount).toHaveBeenCalledWith("secret-1");
+    expect(tokenStore.get()).toBeNull();
   });
 
   it("opens the Account screen for a signed-in user", async () => {

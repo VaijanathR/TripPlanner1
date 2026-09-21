@@ -16,7 +16,7 @@ function describeError(err) {
 }
 
 export default function Login() {
-  const { status, login, register, loginWithGoogle } = useAuth();
+  const { status, login, register, loginWithGoogle, notice } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mode, setMode] = useState("login"); // "login" | "register"
@@ -26,7 +26,6 @@ export default function Login() {
   const [error, setError] = useState(null);
 
   const destination = location.state?.from ?? "/";
-  const notice = location.state?.notice ?? null; // e.g. "Your account was deleted."
 
   if (status === "authed") return <Navigate to={destination} replace />;
 

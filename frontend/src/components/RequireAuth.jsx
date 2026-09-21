@@ -6,7 +6,7 @@ import UserBar from "./UserBar";
 // sends anonymous visitors to /login (remembering where they were headed), and
 // shows a Retry -- not a login screen -- if the server just couldn't be reached.
 export default function RequireAuth({ children }) {
-  const { status, error, retry } = useAuth();
+  const { status, error, retry, notice } = useAuth();
   const location = useLocation();
 
   if (status === "loading") {
@@ -33,7 +33,8 @@ export default function RequireAuth({ children }) {
   }
 
   if (status === "anon") {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    // No "return to" page after an account deletion: there is no account to return as.
+    return <Navigate to="/login" replace state={notice ? undefined : { from: location.pathname + location.search }} />;
   }
 
   return (

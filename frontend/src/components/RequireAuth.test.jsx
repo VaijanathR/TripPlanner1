@@ -53,6 +53,13 @@ describe("RequireAuth", () => {
     expect(screen.queryByText("SECRET TRIP")).not.toBeInTheDocument();
   });
 
+  it("does not remember the page after an account deletion (there is no account to go back as)", () => {
+    useAuth.mockReturnValue(auth({ status: "anon", notice: "Your account was deleted." }));
+    renderGuarded("/trips/5");
+
+    expect(screen.getByText("LOGIN PAGE (from: none)")).toBeInTheDocument();
+  });
+
   it("shows the page, and who is logged in, for a logged-in user", () => {
     useAuth.mockReturnValue(auth({ status: "authed", user: { id: 1, email: "alice@example.com" } }));
     renderGuarded();

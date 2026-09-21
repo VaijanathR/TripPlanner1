@@ -4,6 +4,7 @@ export { expect };
 export const API = "http://127.0.0.1:8000";
 export const PASSWORD = "e2e-password-123";
 export const KYOTO_ID = 1857910;
+export const ADMIN_EMAIL = "e2e-admin@example.com"; // listed in ADMIN_EMAILS by serve_backend.py
 
 let counter = 0;
 const uniqueEmail = () => `e2e-${Date.now()}-${counter++}@example.com`;
@@ -34,6 +35,25 @@ export async function apiUser(request, address, email = uniqueEmail()) {
   expect(res.status()).toBe(201);
   const body = await res.json();
   return { email, password: PASSWORD, token: body.access_token };
+}
+
+// The administrator. Registered on first use; a retried test finds the account
+// already there, so it logs in instead.
+export async function apiAdmin(request, address) {
+  const headers = { "X-Forwarded-For": address };
+  let res = await request.post(`${API}/api/auth/register`, { headers, data: { email: ADMIN_EMAIL, password: PASSWORD } });
+  if (res.status() === 409) {
+    res = await request.post(`${API}/api/auth/login`, { headers, data: { email: ADMIN_EMAIL, password: PASSWORD } });
+    expect(res.status()).toBe(200);
+  } else {
+    expect(res.status()).toBe(201);
+  }
+  const body = await res.json();
+  return { email: ADMIN_EMAIL, password: PASSWORD, token: body.access_token };
+}
+
+export async function apiLogin(request, address, email, password) {
+  return request.post(`${API}/api/auth/login`, { headers: { "X-Forwarded-For": address }, data: { email, password } });
 }
 
 export async function apiTrip(request, user, name, geonameId = KYOTO_ID) {

@@ -13,7 +13,7 @@ export default function UserBar() {
           {user.is_admin && <Link to="/admin">Admin</Link>}
         </nav>
         <span className="user-email">{user.email}</span>
-        <button type="button" className="btn-ghost" onClick={logout}>
+        <button type="button" className="btn-ghost" onClick={() => logout()}>
           Log out
         </button>
       </div>

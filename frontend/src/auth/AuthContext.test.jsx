@@ -23,10 +23,12 @@ function Probe() {
       <p data-testid="status">{auth.status}</p>
       <p data-testid="email">{auth.user?.email ?? "-"}</p>
       <p data-testid="error">{auth.error ?? "-"}</p>
+      <p data-testid="notice">{auth.notice ?? "-"}</p>
       <button onClick={() => auth.login("a@x.co", "pw").catch(() => {})}>login</button>
       <button onClick={() => auth.register("a@x.co", "pw")}>register</button>
       <button onClick={() => auth.loginWithGoogle("g-cred")}>google</button>
       <button onClick={auth.logout}>logout</button>
+      <button onClick={() => auth.logout({ notice: "Your account was deleted." })}>logout-with-notice</button>
       <button onClick={auth.retry}>retry</button>
     </div>
   );
@@ -138,6 +140,35 @@ describe("AuthProvider: logging in and out", () => {
     expect(status()).toBe("anon");
     expect(screen.getByTestId("email")).toHaveTextContent("-");
     expect(tokenStore.get()).toBeNull();
+  });
+
+  it("keeps a logout notice for the Login screen, and clears it on the next login", async () => {
+    tokenStore.set("stored");
+    authApi.me.mockResolvedValue(alice);
+    authApi.login.mockResolvedValue({ access_token: "tok", user: alice });
+    renderProbe();
+    await waitFor(() => expect(status()).toBe("authed"));
+    expect(screen.getByTestId("notice")).toHaveTextContent("-");
+
+    fireEvent.click(screen.getByText("logout-with-notice"));
+    expect(status()).toBe("anon");
+    expect(screen.getByTestId("notice")).toHaveTextContent("Your account was deleted.");
+    expect(tokenStore.get()).toBeNull();
+
+    fireEvent.click(screen.getByText("login"));
+    await waitFor(() => expect(status()).toBe("authed"));
+    expect(screen.getByTestId("notice")).toHaveTextContent("-");
+  });
+
+  it("has no notice after an ordinary logout", async () => {
+    tokenStore.set("stored");
+    authApi.me.mockResolvedValue(alice);
+    renderProbe();
+    await waitFor(() => expect(status()).toBe("authed"));
+
+    fireEvent.click(screen.getByText("logout"));
+
+    expect(screen.getByTestId("notice")).toHaveTextContent("-");
   });
 
   it("ends the session when a logged-in request is rejected with 401", async () => {
