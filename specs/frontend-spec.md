@@ -7,8 +7,8 @@ screens, flow, and behavior only.
 
 ### 0. Login
 Log in or create an account with an email and password, or with Google
-(when it is configured). Every screen except the Share View requires a
-login.
+(when it is configured; the deployed app doesn't configure it). Every screen
+except Login, the Share View and the Photo credits page requires a login.
 
 ### 1. Trip List
 All of a user's trips. Shows every trip the user has created, each as a
@@ -38,6 +38,7 @@ Lists all accounts and lets an administrator delete one.
 
 ## User Flow
 
+0. A visitor who isn't logged in is sent to **Login** first and returned to the page they asked for.
 1. User opens the app → **Trip List**.
 2. User creates a new trip → **Itinerary Editor**.
 3. User adds a day to the trip.
@@ -48,6 +49,8 @@ Lists all accounts and lets an administrator delete one.
    → **Share View**, read-only.
 8. From Trip List, user can also open an existing trip to keep editing,
    or delete a trip, removing it and invalidating its share link.
+9. From any signed-in screen the user opens **Account** to delete their account.
+10. An administrator opens **Admin** to delete other accounts.
 
 ## Acceptance Criteria
 

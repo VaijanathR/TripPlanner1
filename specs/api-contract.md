@@ -295,7 +295,7 @@ frontend-spec.md), never an exception that surfaces as a `5xx`.
   { "error": { "code": "not_found", "message": "Day not found" } }
   ```
 
-### Rate limits
+## Rate limits
 
 The public sign-in endpoints refuse a caller who makes too many attempts:
 
@@ -317,6 +317,7 @@ with a `Retry-After` header (seconds).
   reveals which emails exist.
 - A successful login clears that email-and-address count (R1).
 - A password lock never blocks Google sign-in.
+- A wrong password sent to `DELETE /api/auth/me` counts as a failed login (R1 and R2).
 - The caller's address is the last entry of `X-Forwarded-For` (the one the
   hosting platform adds, because earlier entries can be forged by the caller);
   without that header, the connection's own address.

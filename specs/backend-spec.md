@@ -9,8 +9,12 @@ non-functional requirements only.
 ### Trip
 - `id` — primary key
 - `name` — string, required
+- `user_id` — foreign key → User, required (the owner)
 - `share_token` — string, nullable, unique; set when a share link is
   generated, cleared/unset if the link is ever revoked
+- `geoname_id`, `city`, `state`, `country`, `country_code`, `latitude`,
+  `longitude` — all nullable; the trip's destination, filled from the
+  geocoder when a place is chosen
 - `created_at`, `updated_at`
 
 A Trip's date range and day count, shown on the Trip List, are derived
@@ -37,9 +41,35 @@ from its Days rather than stored redundantly.
 - `order_index` — integer, required (order within the day)
 - `created_at`, `updated_at`
 
+### User
+- `id` — primary key
+- `email` — string, required, unique
+- `password_hash` — string, nullable (null for an account that only ever
+  signed in with Google)
+- `google_sub` — string, nullable, unique
+- `created_at`
+
+### DestinationGuide
+- `id` — primary key
+- `geoname_id` — integer; one guide per place, shared by every trip going there
+- `status` — string
+- `payload` — text, nullable (the built guide)
+- `updated_at`
+
+### AuthAttempt
+- `id` — primary key
+- `kind` — string (login failure, sign-up, Google)
+- `email_hash` — string, nullable
+- `address_hash` — string, required
+- `created_at`
+
+Only keyed hashes are stored here (see "Rate limiting"); old rows are purged
+automatically.
+
 ### Relationships
 - Trip has many Days (`Trip 1 —* Day`), cascade delete.
 - Day has many Activities (`Day 1 —* Activity`), cascade delete.
+- User has many Trips (`User 1 —* Trip`), cascade delete.
 
 ## Business Rules
 
@@ -78,11 +108,11 @@ from its Days rather than stored redundantly.
   `share_token` is cleared; there is no grace period.
 
 ### Maps/weather integration
-- The maps/weather API key is read from server-side configuration
-  (environment variable / secret store) only. It is never included in
-  any request or response body returned to a client, and the frontend
-  never calls the upstream maps/weather API directly — only the backend
-  does.
+- The maps/weather source (Open-Meteo) needs no API key. If a source that
+  needs a key is ever used, the key is read from server-side configuration
+  only and never appears in any request or response body. Either way, the
+  frontend never calls the upstream maps/weather API directly — only the
+  backend does.
 - Calls to the upstream maps/weather API use a bounded timeout (in the
   low single-digit seconds) so a slow or hanging upstream can never
   block or fail the Trip/Day/Activities read path.
@@ -203,7 +233,8 @@ The public sign-in endpoints (`/api/auth/login`, `/api/auth/register`,
 `specs/api-contract.md` ("Rate limits"). Attempts are recorded in the database
 (a table for attempt counters), so limits survive a restart. Only hashed keys are
 stored — an HMAC-SHA-256 of the email and of the caller address, keyed from the
-application's secret — never raw emails or addresses.
+application's secret — never raw emails or addresses. A wrong password sent to
+the account-deletion endpoint counts as a failed login under R1 and R2.
 
 ### Acceptance criteria
 - Each of the four limits (R1 to R4) is enforced, and each is independent of the

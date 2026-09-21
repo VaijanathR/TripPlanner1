@@ -7,7 +7,7 @@ Let a user plan a multi-day trip and produce a shareable itinerary.
 - React frontend
 - FastAPI backend
 - A relational database
-- The external maps/weather API key must never appear in client-side code
+- The maps/weather source (Open-Meteo) needs no API key; a key that a source ever needs must never appear in client-side code
 - Passwords are stored only as salted hashes and are never returned by the API
 - Destination data (geocoding, photos, places) comes from free, key-less sources, fetched only by the backend and cached; photos are credited to their source
 
@@ -18,4 +18,5 @@ Let a user plan a multi-day trip and produce a shareable itinerary.
 - Destinations: a user can choose a trip's destination by typing a country, state and city and picking from the matching places
 - Discover: for a trip's destination the app shows photos of the city, state and country, popular places in and around the city, and things to do; a slow or failing data source never breaks the trip page
 - Popular places can be added to a day of the itinerary in one step, without ever overwriting unsaved edits
-- Accounts: a user can sign up and log in with an email and password, or with Google, and only ever sees and changes their own trips. Share links stay public and read-only.
+- Accounts: a user can sign up and log in with an email and password (sign-in with Google is built but is not enabled in the deployed app), and only ever sees and changes their own trips. Share links stay public and read-only.
+- Account deletion: a user can delete their own account and everything it owns; an administrator can delete other accounts, but never an administrator's.
